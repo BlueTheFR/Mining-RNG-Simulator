@@ -80,6 +80,11 @@
             display: none;
             z-index: 9999;
         }
+		@keyframes imaginaryPulseAnim {
+			0%   { transform: translate(-50%, -50%) scale(1.5); }
+			50%  { transform: translate(-50%, -50%) scale(2.3); }
+			100% { transform: translate(-50%, -50%) scale(1.5); }
+		}
     </style>
 </head>
 <body>
@@ -90,6 +95,15 @@
         <button id="sortToggle" onclick="toggleSort()">Sort: Common → Rarest</button>
 		<button id="compactToggle" onclick="toggleCompact()">Compact: Off</button>
     </div>
+	<div id="spawnEffect" style="
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: transparent;
+    pointer-events: none;
+    z-index: 9998;
+    transition: background 5s linear;
+	"></div>
 
     <canvas id="game" width="270" height="270"></canvas>
 
@@ -182,50 +196,186 @@
 	}
 		
         function playSpawnSound(ore) {
-            if (spawnLock) return;
-            const data = oreData[ore];
-            if (!data.spawnMsg) return;
+    if (spawnLock) return;
 
-            spawnLock = true;
-            const msgDiv = document.getElementById("spawnMessage");
-            msgDiv.innerText = data.spawnMsg;
-            msgDiv.style.color = rarityColors[data.rarity] || "#ffffff";
-            msgDiv.style.display = "block";
+    const data = oreData[ore];
+    if (!data.spawnMsg) return;
 
-            let audioId = null;
-            const exact = data.exact;
+    spawnLock = true;
 
-            if (exact >= 250000 && exact < 10000000) audioId = "Achillgoesdownyourspine";
-            else if (exact >= 10000000 && exact < 25000000) audioId = "Yourheartskipsabeat";
-            else if (exact >= 25000000 && exact < 51000000) audioId = "Transcendent";
-            else if (exact >= 51000000 && exact < 100000000) audioId = "Enigmatic";
-            else if (exact >= 100000000 && exact < 251000000) audioId = "Unfathomable";
-            else if (exact >= 251000000 && exact < 1000000000) audioId = "Otherworldly";
-            else if (exact >= 1000000000 && exact < 50000000000) audioId = "Imaginary";
-            else if (exact >= 50000000000 && exact < 1000000000000) audioId = "Zenith";
-            else if (exact >= 1000000000000) audioId = "Eternal";
+    const msgDiv = document.getElementById("spawnMessage");
+    msgDiv.innerText = data.spawnMsg;
+    msgDiv.style.color = rarityColors[data.rarity] || "#ffffff";
+    msgDiv.style.display = "block";
 
-            function unlock() {
-                msgDiv.style.display = "none";
-                spawnLock = false;
-            }
+    let audioId = null;
+    const exact = data.exact;
 
-            if (!audioEnabled || !audioId) {
-                setTimeout(unlock, 5000);
-                return;
-            }
+    if (exact >= 250000 && exact < 10000000) audioId = "Achillgoesdownyourspine";
+    else if (exact >= 10000000 && exact < 25000000) audioId = "Yourheartskipsabeat";
+    else if (exact >= 25000000 && exact < 51000000) audioId = "Transcendent";
+    else if (exact >= 51000000 && exact < 100000000) audioId = "Enigmatic";
+    else if (exact >= 100000000 && exact < 251000000) audioId = "Unfathomable";
+    else if (exact >= 251000000 && exact < 1000000000) audioId = "Otherworldly";
+    else if (exact >= 1000000000 && exact < 50000000000) audioId = "Imaginary";
+    else if (exact >= 50000000000 && exact < 1000000000000) audioId = "Zenith";
+    else if (exact >= 1000000000000) audioId = "Eternal";
 
-            const audio = document.getElementById(audioId);
-            audio.pause();
-            audio.currentTime = 0;
-            audio.play()
-                .then(() => {
-                    audio.onended = unlock;
-                })
-                .catch(() => {
-                    setTimeout(unlock, 5000);
-                });
+    function unlock() {
+        msgDiv.style.display = "none";
+        spawnLock = false;
+    }
+
+    if (!audioEnabled || !audioId) {
+        setTimeout(unlock, 5000);
+        return;
+    }
+
+    const audio = document.getElementById(audioId);
+    audio.pause();
+    audio.currentTime = 0;
+
+    audio.play().then(() => {
+
+        /* =========================
+           🔥 ETERNAL EFFECT
+        ========================== */
+        if (data.rarity === "Eternal") {
+
+            const overlay = document.getElementById("spawnEffect");
+
+            overlay.style.transition = "background 0s linear";
+            overlay.style.background = "transparent";
+
+            setTimeout(() => {
+                overlay.style.transition = "background 5s linear";
+                overlay.style.background = "white";
+            }, 50);
+
+            setTimeout(() => {
+                overlay.style.transition = "background 5s linear";
+                overlay.style.background = "rgba(100,100,100,0.7)";
+            }, 5050);
+
+            audio.onended = () => {
+                overlay.style.transition = "background 1s linear";
+                overlay.style.background = "transparent";
+                unlock();
+            };
+
+            return;
         }
+
+        /* =========================
+           🌌 ZENITH EFFECT
+        ========================== */
+        if (data.rarity === "Zenith") {
+
+            const numDivs = 5;
+            const spawnDivs = [];
+
+            function isOverlapping(x, y, size = 150) {
+                return spawnDivs.some(d =>
+                    Math.abs(d.x - x) < size &&
+                    Math.abs(d.y - y) < size
+                );
+            }
+
+            for (let i = 0; i < numDivs; i++) {
+                let x, y, attempts = 0;
+
+                do {
+                    x = Math.random() * (window.innerWidth - 200) + 50;
+                    y = Math.random() * (window.innerHeight - 200) + 50;
+                    attempts++;
+                } while (isOverlapping(x, y) && attempts < 20);
+
+                const div = document.createElement("div");
+                div.innerText = data.spawnMsg;
+                div.style.position = "fixed";
+                div.style.left = x + "px";
+                div.style.top = y + "px";
+                div.style.fontSize = "24px";
+                div.style.fontWeight = "bold";
+                div.style.color = rarityColors["Zenith"];
+                div.style.pointerEvents = "none";
+                div.style.zIndex = 10000;
+
+                document.body.appendChild(div);
+                spawnDivs.push({ div, x, y });
+            }
+
+            let angle = 0;
+            const spinInterval = setInterval(() => {
+                angle += 5;
+                spawnDivs.forEach(d =>
+                    d.div.style.transform = `rotate(${angle}deg)`
+                );
+            }, 50);
+
+            audio.onended = () => {
+                clearInterval(spinInterval);
+                spawnDivs.forEach(d => d.div.remove());
+                unlock();
+            };
+
+            return;
+        }
+		/* =========================
+   🌠 IMAGINARY EFFECT (OVER CANVAS)
+========================= */
+if (data.rarity === "Imaginary") {
+
+    const canvas = document.getElementById("game");
+
+    const block = document.createElement("div");
+
+    block.style.position = "absolute";
+    block.style.top = canvas.offsetTop + canvas.height / 2 + "px";
+    block.style.left = canvas.offsetLeft + canvas.width / 2 + "px";
+    block.style.transform = "translate(-50%, -50%) scale(1.5)";
+    block.style.width = "180px";
+    block.style.height = "180px";
+    block.style.background = data.color;
+    block.style.display = "flex";
+    block.style.alignItems = "center";
+    block.style.justifyContent = "center";
+    block.style.fontSize = "70px";
+    block.style.fontWeight = "bold";
+    block.style.color = data.symbolColor || "#fff";
+    block.style.borderRadius = "20px";
+    block.style.zIndex = "5";
+    block.style.pointerEvents = "none";
+    block.style.animation = "imaginaryPulseAnim 1.5s infinite ease-in-out";
+
+    block.innerText = data.symbol || "";
+
+    document.body.appendChild(block);
+
+    audio.onended = () => {
+        block.remove();
+        unlock();
+    };
+
+    return;
+}
+
+
+
+
+
+        /* =========================
+           NORMAL RARITIES
+        ========================== */
+        audio.onended = unlock;
+
+    }).catch(() => {
+        setTimeout(unlock, 5000);
+    });
+}
+
+
+      
 
         function toggleSort() {
             sortRarestFirst = !sortRarestFirst;
@@ -287,7 +437,7 @@ const oreData = {
 	Chronium:{rarity:"Transcendent", value:49, color:"#00ffff", symbol:"Ch", spawnMsg:"You hear a ringing!", exact:38000000},
 	Quantumite:{rarity:"Transcendent", value:50, color:"#2196f3", symbol:"Q", spawnMsg:"You hear a ringing!", exact:40000000},
 	Hyperion:{rarity:"Transcendent", value:51, color:"#ff4081", symbol:"Hy", spawnMsg:"You hear a ringing!", exact:45000000},
-	Vortexium:{rarity:"Transcendent", value:52, color:"#9c27b0", symbol:"Vx", spawnMsg:"You hear a ringing!", exact:50000000},
+	Vortexium:{rarity:"Transcendent", value:52, color:"#9c27b0", symbol:"Vx", spawnMsg:"You hear a ringing!", exact:52500000},
 	Ecliptium:{rarity:"Transcendent", value:53, color:"#ff5722", symbol:"Ec", spawnMsg:"You hear a ringing!", exact:55000000},
 	OblivionCore:{rarity:"Enigmatic", value:54, color:"#37474f", symbol:"OC", spawnMsg:"Your vision begins to blur!", exact:90000000},
 	Abyssion:{rarity:"Otherworldly", value:35, color:"#8b0000", symbol:"Ab", exact:500000000, spawnMsg:"The world trembles as Abyssion emerges!"},
