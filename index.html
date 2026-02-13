@@ -1247,9 +1247,8 @@ replaySpawn.onclick = () => {
     if (lastSpawnOre) playSpawnSound(lastSpawnOre);
 };
 
-
-function saveGame() {
-    localStorage.setItem("miningSaveV17", JSON.stringify({
+function saveGame(showAlert = true) {
+    localStorage.setItem("MiningRNGSimulator", JSON.stringify({
         inventory,
         ownedPickaxes,
         equippedPickaxe,
@@ -1260,12 +1259,17 @@ function saveGame() {
         pauseOnChill,
         waitingForManualHighOre
     }));
-    alert("Game saved!");
+
+    if (showAlert) {
+        alert("Game saved!");
+    } else {
+        console.log("Game auto-saved at " + new Date().toLocaleTimeString());
+    }
 }
 
 function loadGame() {
-    let save = localStorage.getItem("miningSaveV17");
-    if(save){
+    const save = localStorage.getItem("MiningRNGSimulator");
+    if (save) {
         const data = JSON.parse(save);
         inventory = data.inventory || {};
         ownedPickaxes = data.ownedPickaxes || ["T0"];
@@ -1280,14 +1284,19 @@ function loadGame() {
         inventory = {};
     }
 }
-
-function resetGame(){ localStorage.removeItem("miningSaveV17"); location.reload(); }
-
+function resetGame() { 
+    localStorage.removeItem("MiningRNGSimulator"); 
+    location.reload(); 
+}
 loadGame();
 generateGrid();
 updateUI();
 draw();
 startArtefact();
+setInterval(() => {
+    saveGame(false); // false = do NOT show alert
+}, 300000); // 300000ms = 5 minutes
+
 </script>
 </body>
 </html>
