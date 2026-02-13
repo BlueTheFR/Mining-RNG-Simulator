@@ -819,11 +819,16 @@ function showOreViewer(ore) {
     oreBlock.style.background = data.color;
     oreBlock.innerText = data.symbol || "";
     oreBlock.style.color = data.symbolColor || "#fff";
-    oreName.innerText = `${ore} (${data.rarity})`; // show rarity in viewer
-    oreRarity.innerText = data.rarity;
+
+    // Show ore name + rarity in one line
+    oreName.innerText = `${ore} (${data.rarity})`;
+
+    // Show exact chance formatted
+    oreRarity.innerText = `1 in ${formatNumber(data.exact)}`;
+
     lastSpawnOre = ore; // store for replay
-    // Do NOT call playSpawnSound here
 }
+
 
 
 // Replay button
