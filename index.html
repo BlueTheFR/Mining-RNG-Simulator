@@ -12,16 +12,18 @@
             display: flex;
             flex-direction: column;
             align-items: center;
+			overflow-x: hidden;
         }
 
-        /* Game canvas */
         #game {
-            background: #222;
-            cursor: pointer;
-            margin-top: 10px;
-            position: relative;
-            z-index: 1;
-        }
+    background: #222;
+    cursor: pointer;
+    margin-top: 10px;
+    margin-left: -100px; /* move 20px to the left */
+    position: relative;
+    z-index: 1;
+}
+
 
         /* UI below the canvas */
         #ui {
@@ -225,6 +227,7 @@
         <button onclick="resetGame()">Reset</button>
         <button id="sortToggle" onclick="toggleSort()">Sort: Common → Rarest</button>
         <button id="compactToggle" onclick="toggleCompact()">Compact: Off</button>
+		<button id="volumeToggle" onclick="toggleVolume()">Volume: 100%</button>
     </div>
 
     <div id="spawnEffect"></div>
@@ -315,7 +318,9 @@
         let spawnLock = false;
 		let compactNumbers = false;
 		let recentFinds = [];
-		
+		let volumeLevels = [1, 0.75, 0.5, 0.25, 0.05, 0];
+		let currentVolumeIndex = 0;
+
 		
 		function toggleCompact() {
 			compactNumbers = !compactNumbers;
@@ -335,7 +340,23 @@
 		if (n >= 1e3)  return (n / 1e3).toFixed(1) + "K";   // Thousand
 		return n.toString();
 	}
-		
+	function toggleVolume() {
+    currentVolumeIndex++;
+    if (currentVolumeIndex >= volumeLevels.length) {
+        currentVolumeIndex = 0;
+    }
+
+    const volume = volumeLevels[currentVolumeIndex];
+
+    document.getElementById("volumeToggle").innerText =
+        "Volume: " + Math.round(volume * 100) + "%";
+
+    // Apply volume to ALL audio elements
+    document.querySelectorAll("audio").forEach(a => {
+        a.volume = volume;
+    });
+}
+	
         function playSpawnSound(ore) {
     if (spawnLock) return;
 
@@ -632,11 +653,12 @@ const oreData = {
 	Vortexium:{rarity:"Transcendent", value:52, color:"#9c27b0", symbol:"Vx", spawnMsg:"You hear a ringing!", exact:52500000},
 	Ecliptium:{rarity:"Transcendent", value:53, color:"#ff5722", symbol:"Ec", spawnMsg:"You hear a ringing!", exact:55000000},
 	OblivionCore:{rarity:"Enigmatic", value:54, color:"#37474f", symbol:"OC", spawnMsg:"Your vision begins to blur!", exact:90000000},
-	Abyssion:{rarity:"Otherworldly", value:35, color:"#8b0000", symbol:"Ab", exact:500000000, spawnMsg:"The world trembles as Abyssion emerges!"},
-	Eternium:{rarity:"Otherworldly", value:36, color:"#ff1744", symbol:"Et", exact:550000000, spawnMsg:"Eternium pulses with unimaginable energy!"},
-	Voidessence:{rarity:"Otherworldly", value:37, color:"#6a1b9a", symbol:"Ve", exact:600000000, spawnMsg:"Voidessence warps the very fabric of existence!"},
-	Cosmosite:{rarity:"Otherworldly", value:38, color:"#ff6867", symbol:"Co", exact:650000000, spawnMsg:"The cosmos quivers as Cosmosite forms!"},
-	Singulite:{rarity:"Otherworldly", value:39, color:"#00ffff", symbol:"Si", exact:700000000, spawnMsg:"Singulite bends space and time around you!"},
+	Abyssion:{rarity:"Otherworldly", value:55, color:"#8b0000", symbol:"Ab", exact:500000000, spawnMsg:"The world trembles as Abyssion emerges!"},
+	Eternium:{rarity:"Otherworldly", value:56, color:"#ff1744", symbol:"Et", exact:550000000, spawnMsg:"Eternium pulses with unimaginable energy!"},
+	Voidessence:{rarity:"Otherworldly", value:57, color:"#6a1b9a", symbol:"Ve", exact:600000000, spawnMsg:"Voidessence warps the very fabric of existence!"},
+	Cosmosite:{rarity:"Otherworldly", value:58, color:"#ff6867", symbol:"Co", exact:650000000, spawnMsg:"The cosmos quivers as Cosmosite forms!"},
+	Singulite:{rarity:"Otherworldly", value:59, color:"#00ffff", symbol:"Si", exact:700000000, spawnMsg:"Singulite bends space and time around you!"},
+	ZergHunter:{rarity:"Otherworldly", value:60, color:"#00ffff", symbol:"Si", exact:100000000, spawnMsg:"Survive… or become meat"},
 };
 const rarityColors = {
     Exotic: "#ffeb3b",
@@ -678,7 +700,12 @@ const artefactData = {
     2:{desc:"Mines 2 block every 4s",cost:{Coal:10},interval:4000,blocks:2},
     3:{desc:"Mines 3 block every 1s",cost:{Emerald:25},interval:1000,blocks:3},
     4:{desc:"Mines 5 blocks every 1s",cost:{Void:20},interval:1000,blocks:5},
-    5:{desc:"Mines 25 blocks every 1s",cost:{HyperMega:1},interval:1000,blocks:25}
+    5:{desc:"Mines 25 blocks every 1s",cost:{HyperMega:1},interval:1000,blocks:25},
+	6:{desc:"Mines 50 blocks every 1s",cost:{Tera:1},interval:1000,blocks:50},
+	7:{desc:"Mines 75 blocks every 1s",cost:{TeraPlus:1},interval:1000,blocks:75},
+	8:{desc:"Mines 100 blocks every 1s",cost:{PetaPlus1:1},interval:1000,blocks:100},
+	9:{desc:"Mines 150 blocks every 1s",cost:{Celestium:1},interval:1000,blocks:150},
+	10:{desc:"Mines 250 blocks every 1s",cost:{Nebulium:1},interval:1000,blocks:250},
 };
 
 // Luck Artefacts
@@ -1124,29 +1151,47 @@ function updateArtefactUI() {
     const aUI = document.getElementById("artefactUI");
     aUI.innerHTML = "";
 
-    for (let lvl = 1; lvl <= 5; lvl++) {
+    const maxLevel = Object.keys(artefactData).length;
+
+    for (let lvl = 1; lvl <= maxLevel; lvl++) {
         const container = document.createElement("div");
         container.style.marginBottom = "6px";
 
         const a = artefactData[lvl];
         const btn = document.createElement("button");
 
-        if (artefactLevel === lvl) {
-            btn.innerText = `Level ${lvl} (Equipped)`;
-            btn.disabled = true;
-        } else if (artefactLevel > lvl) {
+        if (lvl < artefactLevel) {
+            // Already purchased but NOT equipped
             btn.innerText = `Level ${lvl} (Unlocked)`;
             btn.disabled = true;
-        } else {
+        } else if (lvl === artefactLevel) {
+            // Currently equipped
+            btn.innerText = `Level ${lvl} (Equipped)`;
+            btn.disabled = true;
+        } else if (lvl === artefactLevel + 1) {
+            // Next level available to buy
             btn.innerText = `Buy Level ${lvl}`;
             btn.onclick = () => {
                 if (canAfford(a.cost)) {
                     spendCost(a.cost);
+
+                    // Update level
                     artefactLevel = lvl;
+
+                    // Auto-equip new level
+                    if (artefactInterval) clearInterval(artefactInterval);
                     startArtefact();
+
+                    // Update UI to show new level equipped
                     updateUI();
-                } else alert("Not enough resources");
+                } else {
+                    alert("Not enough resources");
+                }
             };
+        } else {
+            // Future locked levels
+            btn.innerText = `Locked`;
+            btn.disabled = true;
         }
 
         container.appendChild(btn);
@@ -1154,9 +1199,9 @@ function updateArtefactUI() {
         const div = document.createElement("div");
         div.style.fontSize = "12px";
 
-        if (artefactLevel < lvl) {
+        if (lvl === artefactLevel + 1) {
             div.innerHTML = a.desc + "<br><strong>Cost:</strong> " + costToString(a.cost);
-            if (canAfford(a.cost)) div.style.color = "lime"; // GREEN if affordable
+            if (canAfford(a.cost)) div.style.color = "lime"; // show green if affordable
         } else {
             div.innerHTML = a.desc;
         }
@@ -1166,33 +1211,49 @@ function updateArtefactUI() {
     }
 }
 
-// LUCK ARTEFACT UI
+
+
+
 function updateLuckArtefactUI() {
     const lUI = document.getElementById("luckArtefactUI");
     lUI.innerHTML = "";
 
-    for (let lvl = 1; lvl <= 50; lvl++) {
+    const maxLevel = Object.keys(luckArtefactData).length;
+
+    for (let lvl = 1; lvl <= maxLevel; lvl++) {
         const container = document.createElement("div");
         container.style.marginBottom = "6px";
 
-        const a = luckArtefactData[lvl];
+        const data = luckArtefactData[lvl];
         const btn = document.createElement("button");
 
-        if (luckArtefactLevel === lvl) {
-            btn.innerText = `Level ${lvl} (Equipped)`;
-            btn.disabled = true;
-        } else if (luckArtefactLevel > lvl) {
+        if (lvl < luckArtefactLevel) {
+            // Already purchased but NOT equipped
             btn.innerText = `Level ${lvl} (Unlocked)`;
             btn.disabled = true;
-        } else {
+        } else if (lvl === luckArtefactLevel) {
+            // Currently equipped
+            btn.innerText = `Level ${lvl} (Equipped)`;
+            btn.disabled = true;
+        } else if (lvl === luckArtefactLevel + 1) {
+            // Next level available to buy
             btn.innerText = `Buy Level ${lvl}`;
             btn.onclick = () => {
-                if (canAfford(a.cost)) {
-                    spendCost(a.cost);
+                if (canAfford(data.cost)) {
+                    spendCost(data.cost);
+
+                    // Update level and auto-equip
                     luckArtefactLevel = lvl;
+
                     updateUI();
-                } else alert("Not enough resources");
+                } else {
+                    alert("Not enough resources");
+                }
             };
+        } else {
+            // Locked future levels
+            btn.innerText = `Locked`;
+            btn.disabled = true;
         }
 
         container.appendChild(btn);
@@ -1200,17 +1261,20 @@ function updateLuckArtefactUI() {
         const div = document.createElement("div");
         div.style.fontSize = "12px";
 
-        if (luckArtefactLevel < lvl) {
-            div.innerHTML = a.desc + "<br><strong>Cost:</strong> " + costToString(a.cost);
-            if (canAfford(a.cost)) div.style.color = "lime"; // GREEN if affordable
+        if (lvl === luckArtefactLevel + 1) {
+            div.innerHTML = data.desc + "<br><strong>Cost:</strong> " + costToString(data.cost);
+            if (canAfford(data.cost)) div.style.color = "lime";
         } else {
-            div.innerHTML = a.desc;
+            div.innerHTML = data.desc;
         }
 
         container.appendChild(div);
         lUI.appendChild(container);
     }
 }
+
+
+
 
 // Ore Viewer
 const oreViewer = document.getElementById("oreViewer");
@@ -1280,8 +1344,11 @@ function loadGame() {
         luckArtefactLevel = data.luckArtefactLevel || 0;
         pauseOnChill = data.pauseOnChill || false;
         waitingForManualHighOre = data.waitingForManualHighOre || false;
+        currentVolumeIndex = data.currentVolumeIndex ?? 0;
+
     } else {
         inventory = {};
+        currentVolumeIndex = 0;
     }
 }
 function resetGame() { 
@@ -1289,6 +1356,9 @@ function resetGame() {
     location.reload(); 
 }
 loadGame();
+document.querySelectorAll("audio").forEach(a => {
+    a.volume = volumeLevels[currentVolumeIndex];
+});
 generateGrid();
 updateUI();
 draw();
