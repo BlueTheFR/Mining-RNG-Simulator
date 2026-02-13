@@ -13,16 +13,23 @@
             flex-direction: column;
             align-items: center;
         }
+
+        /* Game canvas */
         #game {
             background: #222;
             cursor: pointer;
             margin-top: 10px;
+            position: relative;
+            z-index: 1;
         }
+
+        /* UI below the canvas */
         #ui {
             display: flex;
             width: 1280px;
             margin-top: 10px;
         }
+
         #pickaxeUI, #gearUI, #artefactUI, #luckArtefactUI {
             width: 320px;
             padding: 10px;
@@ -30,7 +37,9 @@
             overflow-y: auto;
             height: 250px;
             margin-right: 10px;
+            border-radius: 8px;
         }
+
         #inventory {
             width: 960px;
             padding: 10px;
@@ -38,7 +47,10 @@
             overflow-y: auto;
             height: 150px;
             margin-top: 10px;
+            border-radius: 8px;
         }
+
+        /* Buttons styling */
         button {
             width: 100%;
             margin-top: 4px;
@@ -47,17 +59,54 @@
             color: white;
             border: none;
             cursor: pointer;
+            border-radius: 4px;
         }
+
         button:hover {
             background: #444;
         }
+
+        /* Save/Reset buttons */
         #saveReset {
             position: absolute;
             top: 10px;
             left: 10px;
             display: flex;
             gap: 10px;
+            z-index: 50;
         }
+
+        #recentFind {
+    position: absolute;
+    top: 10px;                     
+    left: 1200px;                  
+    width: 200px;
+
+    /* Make it taller to fit 5 ore items */
+    height: auto;           /* allow content to define height */
+    max-height: 240px;      /* limit maximum height */
+    min-height: 240px;      /* optional: minimum starting height */
+
+    background: #222;
+    border: 2px solid #fff;
+    border-radius: 10px;
+    padding: 10px;
+    color: white;
+    font-family: Arial;
+	text-align: center;
+    margin: 0 0 10px 0;
+    z-index: 10;
+}
+#recentFindContent {
+    text-align: center;       /* centers text inside each ore div */
+    display: flex;            /* make items flexible */
+    flex-direction: column;   /* stack ores vertically */
+    align-items: center;      /* horizontally center each ore */
+    gap: 5px;                 /* optional: spacing between ores */
+}
+
+
+        /* Block counters top right */
         #blockCounters {
             position: absolute;
             top: 10px;
@@ -65,7 +114,10 @@
             text-align: right;
             color: white;
             font-family: Arial;
+            z-index: 50;
         }
+
+        /* Spawn message overlay */
         #spawnMessage {
             position: fixed;
             top: 50%;
@@ -80,11 +132,90 @@
             display: none;
             z-index: 9999;
         }
-		@keyframes imaginaryPulseAnim {
-			0%   { transform: translate(-50%, -50%) scale(1.5); }
-			50%  { transform: translate(-50%, -50%) scale(2.3); }
-			100% { transform: translate(-50%, -50%) scale(1.5); }
-		}
+
+        /* Spawn effect overlay */
+        #spawnEffect {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: transparent;
+            pointer-events: none;
+            z-index: 9998;
+            transition: background 5s linear;
+        }
+
+        @keyframes imaginaryPulseAnim {
+            0%   { transform: translate(-50%, -50%) scale(1.5); }
+            50%  { transform: translate(-50%, -50%) scale(2.3); }
+            100% { transform: translate(-50%, -50%) scale(1.5); }
+        }
+
+        /* Ore Index and Inventory wrapper */
+        #bottomPanels {
+            display: flex;
+            width: 1280px;
+            margin-top: 10px;
+            gap: 10px;
+        }
+
+        #oreIndex, #inventory {
+            padding: 10px;
+            background: #181818;
+            overflow-y: auto;
+            border-radius: 8px;
+            color: white;
+        }
+
+        #oreIndex {
+            width: 400px;
+            height: 150px;
+        }
+
+        #inventory {
+            width: 900px;
+            height: 150px;
+        }
+
+        /* Ore Viewer panel */
+        #oreViewer {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            width: 200px;
+            height: 200px;
+            background:#222;
+            border:2px solid #fff;
+            border-radius:10px;
+            display:none;
+            text-align:center;
+            padding:10px;
+            color:white;
+        }
+
+        #oreBlock {
+            width:100%;
+            height:120px;
+            margin-bottom:10px;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            font-size:50px;
+        }
+
+        #oreName {
+            font-weight:bold;
+            font-size:16px;
+        }
+
+        #oreRarity {
+            margin-bottom:10px;
+        }
+
+        #replaySpawn {
+            padding:6px;
+            width:100%;
+        }
+
     </style>
 </head>
 <body>
@@ -93,20 +224,21 @@
         <button onclick="saveGame()">Save</button>
         <button onclick="resetGame()">Reset</button>
         <button id="sortToggle" onclick="toggleSort()">Sort: Common → Rarest</button>
-		<button id="compactToggle" onclick="toggleCompact()">Compact: Off</button>
+        <button id="compactToggle" onclick="toggleCompact()">Compact: Off</button>
     </div>
-	<div id="spawnEffect" style="
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    background: transparent;
-    pointer-events: none;
-    z-index: 9998;
-    transition: background 5s linear;
-	"></div>
 
+    <div id="spawnEffect"></div>
+
+    <!-- Canvas -->
     <canvas id="game" width="270" height="270"></canvas>
 
+    <!-- Recent Finds -->
+    <div id="recentFind">
+        <h3>Recent Finds</h3>
+        <div id="recentFindContent"></div>
+    </div>
+
+    <!-- Main UI panels -->
     <div id="ui">
         <div id="pickaxeUI"><h3>Pickaxes</h3></div>
         <div id="gearUI"><h3>Gear</h3></div>
@@ -114,29 +246,34 @@
         <div id="luckArtefactUI"><h3>Luck Artefact</h3></div>
     </div>
 
+    <!-- Block counters -->
     <div id="blockCounters">
         <div id="totalMined">Total Mined: 0</div>
         <div id="globalMined">Global Mined: 0</div>
     </div>
 
-    <div style="display:flex; width:1280px; margin-top:10px;">
-        <div id="oreIndex" style="width:400px; padding:10px; background:#181818; overflow-y:auto; height:150px; margin-right:10px;">
+    <!-- Bottom panels -->
+    <div id="bottomPanels">
+        <div id="oreIndex">
             <h3>Ore Index</h3>
         </div>
-        <div id="inventory" style="width:900px; padding:10px; background:#181818; overflow-y:auto; height:150px;">
+        <div id="inventory">
             <h3>Inventory</h3>
         </div>
     </div>
 
-    <div id="oreViewer" style="position: fixed; bottom: 10px; right: 10px; width: 200px; height: 200px; background:#222; border:2px solid #fff; border-radius:10px; display:none; text-align:center; padding:10px; color:white;">
-        <div id="oreBlock" style="width:100%; height:120px; margin-bottom:10px; display:flex; align-items:center; justify-content:center; font-size:50px;"></div>
-        <div id="oreName" style="font-weight:bold; font-size:16px;"></div>
-        <div id="oreRarity" style="margin-bottom:10px;"></div>
-        <button id="replaySpawn" style="padding:6px; width:100%;">Replay Spawn Message & Sound</button>
+    <!-- Ore Viewer -->
+    <div id="oreViewer">
+        <div id="oreBlock"></div>
+        <div id="oreName"></div>
+        <div id="oreRarity"></div>
+        <button id="replaySpawn">Replay Spawn Message & Sound</button>
     </div>
 
+    <!-- Spawn Message -->
     <div id="spawnMessage"></div>
 
+    <!-- Audio -->
     <audio id="Achillgoesdownyourspine" src="Achillgoesdownyourspine.mp3" preload="auto"></audio>
     <audio id="Yourheartskipsabeat" src="Yourheartskipsabeat.mp3" preload="auto"></audio>
     <audio id="Transcendent" src="Transcendent.mp3" preload="auto"></audio>
@@ -146,6 +283,8 @@
     <audio id="Imaginary" src="Imaginary.mp3" preload="auto"></audio>
     <audio id="Zenith" src="Zenith.mp3"></audio>
     <audio id="Eternal" src="Eternal.mp3"></audio>
+
+</body>
 
 <script>
         // Unlock audio on first click
@@ -175,6 +314,8 @@
         let audioEnabled = false;
         let spawnLock = false;
 		let compactNumbers = false;
+		let recentFinds = [];
+		
 		
 		function toggleCompact() {
 			compactNumbers = !compactNumbers;
@@ -374,6 +515,57 @@ if (data.rarity === "Imaginary") {
     });
 }
 
+function updateRecentFind(ore) {
+    const data = oreData[ore];
+
+    if (data.exact < 250000) return; // only rare/high-tier ores
+
+    // Add new find at the start
+    recentFinds.unshift({
+        name: ore,
+        rarity: data.rarity,
+        exact: data.exact,
+        color: data.color,
+        symbol: data.symbol || "",
+        symbolColor: data.symbolColor || "#fff"
+    });
+
+    // Keep only 5 items
+    recentFinds = recentFinds.slice(0, 5);
+
+    // Update DOM
+    const div = document.getElementById("recentFindContent");
+    div.innerHTML = "";
+
+    recentFinds.forEach(f => {
+        const fDiv = document.createElement("div");
+        fDiv.style.display = "flex";
+        fDiv.style.alignItems = "center";
+        fDiv.style.marginBottom = "6px";
+
+        const colorBox = document.createElement("div");
+        colorBox.style.width = "24px";
+        colorBox.style.height = "24px";
+        colorBox.style.background = f.color;
+        colorBox.style.color = f.symbolColor;
+        colorBox.style.display = "flex";
+        colorBox.style.alignItems = "center";
+        colorBox.style.justifyContent = "center";
+        colorBox.style.fontWeight = "bold";
+        colorBox.style.marginRight = "6px";
+        colorBox.innerText = f.symbol;
+
+        const text = document.createElement("div");
+        text.innerText = `${f.name} (${f.rarity}) - 1 in ${formatNumber(f.exact)}`;
+        text.style.fontSize = "14px";
+        text.style.flex = "1";
+
+        fDiv.appendChild(colorBox);
+        fDiv.appendChild(text);
+        div.appendChild(fDiv);
+    });
+}
+
 
       
 
@@ -466,7 +658,7 @@ const pickaxeData = {
     T2:{desc:"Mines 2 blocks horizontally.", cost:{Iron:30, Emerald:10}},
     T3:{desc:"Mines in a cross shape.", cost:{Iron:50, Ruby:15, Emerald:10}},
     T4:{desc:"do a 3x3 explosion.", cost:{Ruby:20, Sapphire:10, Emerald:5}},
-    T5:{desc:"5-layer 3x3 mine. 50% chance to spawn NEW 50K+ ore.", cost:{Ruby:50, Sapphire:25, Topaz:20, Diamond:5, Void:3, Gold:1}},
+    T5:{desc:"5-layer 3x3 mine. 50% chance to spawn a new 50K+ ore when mined.", cost:{Ruby:50, Sapphire:25, Topaz:20, Diamond:5, Void:3, Gold:1}},
 	T6:{desc: "7-layer 3x3 mine. 75% chance to spawn a new 10K+ ore, 25% chance to upgrade a random block. Gives 5x luck boost.", cost: {Tera: 1, TeraPlus: 1, Smiley: 5}}
 };
 
@@ -716,7 +908,7 @@ if (upgradeChance > 0 && Math.random() < upgradeChance) {
 // ✅ Now add to inventory
 if (!inventory[ore2]) inventory[ore2] = 0;
 inventory[ore2] += count;
-
+updateRecentFind(ore2, count);
 
 
 		// Replace mined block
@@ -844,7 +1036,7 @@ function spendCost(cost) {
 }
 
 
-// Pickaxe Button
+// PICKAXE BUTTON
 function createPickaxeButton(name, desc, cost) {
     const container = document.createElement("div");
     container.style.marginBottom = "6px";
@@ -870,9 +1062,9 @@ function createPickaxeButton(name, desc, cost) {
     const div = document.createElement("div");
     div.style.fontSize = "12px";
 
-    // 🔥 Only show cost if NOT owned
     if (!owned) {
         div.innerHTML = desc + "<br><strong>Cost:</strong> " + costToString(cost);
+        if (canAfford(cost)) div.style.color = "lime"; // GREEN if affordable
     } else {
         div.innerHTML = desc;
     }
@@ -881,6 +1073,7 @@ function createPickaxeButton(name, desc, cost) {
     document.getElementById("pickaxeUI").appendChild(container);
 }
 
+// GEAR BUTTON
 function createGearButton(name, desc, cost) {
     const container = document.createElement("div");
     container.style.marginBottom = "6px";
@@ -908,6 +1101,7 @@ function createGearButton(name, desc, cost) {
 
     if (!owned) {
         div.innerHTML = desc + "<br><strong>Cost:</strong> " + costToString(cost);
+        if (canAfford(cost)) div.style.color = "lime"; // GREEN if affordable
     } else {
         div.innerHTML = desc;
     }
@@ -925,69 +1119,98 @@ function equipGear(name) {
     updateUI();
 }
 
-	// Artefact UI
-	function updateArtefactUI() {
-		const aUI = document.getElementById("artefactUI");
-		aUI.innerHTML = "";
-		for (let lvl = 1; lvl <= 5; lvl++) {
-			const container = document.createElement("div");
-			container.style.marginBottom = "6px";
+	// ARTEFACT UI
+function updateArtefactUI() {
+    const aUI = document.getElementById("artefactUI");
+    aUI.innerHTML = "";
 
-			const a = artefactData[lvl];
-			const btn = document.createElement("button");
-			if (artefactLevel === lvl) { btn.innerText = `Level ${lvl} (Equipped)`; btn.disabled = true; }
-			else if (artefactLevel > lvl) { btn.innerText = `Level ${lvl} (Unlocked)`; btn.disabled = true; }
-			else btn.innerText = `Buy Level ${lvl}`, btn.onclick = () => {
-				if (canAfford(a.cost)) { spendCost(a.cost); artefactLevel = lvl; startArtefact(); updateUI(); }
-				else alert("Not enough resources");
-			};
-			container.appendChild(btn);
+    for (let lvl = 1; lvl <= 5; lvl++) {
+        const container = document.createElement("div");
+        container.style.marginBottom = "6px";
 
-			const div = document.createElement("div");
-			div.style.fontSize = "12px";
-if (artefactLevel < lvl) {
-    div.innerHTML = a.desc + "<br><strong>Cost:</strong> " + costToString(a.cost);
-} else {
-    div.innerHTML = a.desc;
-	}
+        const a = artefactData[lvl];
+        const btn = document.createElement("button");
 
-			container.appendChild(div);
+        if (artefactLevel === lvl) {
+            btn.innerText = `Level ${lvl} (Equipped)`;
+            btn.disabled = true;
+        } else if (artefactLevel > lvl) {
+            btn.innerText = `Level ${lvl} (Unlocked)`;
+            btn.disabled = true;
+        } else {
+            btn.innerText = `Buy Level ${lvl}`;
+            btn.onclick = () => {
+                if (canAfford(a.cost)) {
+                    spendCost(a.cost);
+                    artefactLevel = lvl;
+                    startArtefact();
+                    updateUI();
+                } else alert("Not enough resources");
+            };
+        }
 
-			aUI.appendChild(container);
-		}
-	}
+        container.appendChild(btn);
 
-// Luck Artefact UI
-	function updateLuckArtefactUI() {
-		const lUI = document.getElementById("luckArtefactUI");
-		lUI.innerHTML = "";
-		for (let lvl = 1; lvl <= 50; lvl++) {
-			const container = document.createElement("div");
-			container.style.marginBottom = "6px";
+        const div = document.createElement("div");
+        div.style.fontSize = "12px";
 
-			const a = luckArtefactData[lvl];
-			const btn = document.createElement("button");
-			if (luckArtefactLevel === lvl) { btn.innerText = `Level ${lvl} (Equipped)`; btn.disabled = true; }
-			else if (luckArtefactLevel > lvl) { btn.innerText = `Level ${lvl} (Unlocked)`; btn.disabled = true; }
-			else btn.innerText = `Buy Level ${lvl}`, btn.onclick = () => {
-				if (canAfford(a.cost)) { spendCost(a.cost); luckArtefactLevel = lvl; updateUI(); }
-				else alert("Not enough resources");
-			};
-			container.appendChild(btn);
+        if (artefactLevel < lvl) {
+            div.innerHTML = a.desc + "<br><strong>Cost:</strong> " + costToString(a.cost);
+            if (canAfford(a.cost)) div.style.color = "lime"; // GREEN if affordable
+        } else {
+            div.innerHTML = a.desc;
+        }
 
-			const div = document.createElement("div");
-			div.style.fontSize = "12px";
-			if (luckArtefactLevel < lvl) {
-    div.innerHTML = a.desc + "<br><strong>Cost:</strong> " + costToString(a.cost);
-} else {
-    div.innerHTML = a.desc;
+        container.appendChild(div);
+        aUI.appendChild(container);
+    }
 }
 
-			container.appendChild(div);
+// LUCK ARTEFACT UI
+function updateLuckArtefactUI() {
+    const lUI = document.getElementById("luckArtefactUI");
+    lUI.innerHTML = "";
 
-			lUI.appendChild(container);
-		}
-	}
+    for (let lvl = 1; lvl <= 50; lvl++) {
+        const container = document.createElement("div");
+        container.style.marginBottom = "6px";
+
+        const a = luckArtefactData[lvl];
+        const btn = document.createElement("button");
+
+        if (luckArtefactLevel === lvl) {
+            btn.innerText = `Level ${lvl} (Equipped)`;
+            btn.disabled = true;
+        } else if (luckArtefactLevel > lvl) {
+            btn.innerText = `Level ${lvl} (Unlocked)`;
+            btn.disabled = true;
+        } else {
+            btn.innerText = `Buy Level ${lvl}`;
+            btn.onclick = () => {
+                if (canAfford(a.cost)) {
+                    spendCost(a.cost);
+                    luckArtefactLevel = lvl;
+                    updateUI();
+                } else alert("Not enough resources");
+            };
+        }
+
+        container.appendChild(btn);
+
+        const div = document.createElement("div");
+        div.style.fontSize = "12px";
+
+        if (luckArtefactLevel < lvl) {
+            div.innerHTML = a.desc + "<br><strong>Cost:</strong> " + costToString(a.cost);
+            if (canAfford(a.cost)) div.style.color = "lime"; // GREEN if affordable
+        } else {
+            div.innerHTML = a.desc;
+        }
+
+        container.appendChild(div);
+        lUI.appendChild(container);
+    }
+}
 
 // Ore Viewer
 const oreViewer = document.getElementById("oreViewer");
@@ -998,20 +1221,24 @@ const replaySpawn = document.getElementById("replaySpawn");
 let lastSpawnOre = null;
 
 function showOreViewer(ore) {
+    if (lastSpawnOre === ore && oreViewer.style.display === "block") {
+        oreViewer.style.display = "none"; // hide if same ore clicked
+        lastSpawnOre = null;
+        return;
+    }
+
     const data = oreData[ore];
     oreViewer.style.display = "block";
     oreBlock.style.background = data.color;
     oreBlock.innerText = data.symbol || "";
     oreBlock.style.color = data.symbolColor || "#fff";
 
-    // Show ore name + rarity in one line
     oreName.innerText = `${ore} (${data.rarity})`;
-
-    // Show exact chance formatted
     oreRarity.innerText = `1 in ${formatNumber(data.exact)}`;
 
     lastSpawnOre = ore; // store for replay
 }
+
 
 
 
