@@ -849,46 +849,70 @@ function createPickaxeButton(name, desc, cost) {
     const container = document.createElement("div");
     container.style.marginBottom = "6px";
 
-    const owned = ownedPickaxes.includes(name), eq = (equippedPickaxe === name);
+    const owned = ownedPickaxes.includes(name);
+    const eq = (equippedPickaxe === name);
+
     const btn = document.createElement("button");
     btn.innerText = owned ? name + (eq ? " (Equipped)" : " (Owned)") : "Buy " + name;
+
     btn.onclick = owned
         ? () => { equippedPickaxe = name; updateUI(); }
         : () => {
-            if (canAfford(cost)) { spendCost(cost); ownedPickaxes.push(name); updateUI(); }
-            else alert("Not enough resources");
+            if (canAfford(cost)) {
+                spendCost(cost);
+                ownedPickaxes.push(name);
+                updateUI();
+            } else alert("Not enough resources");
         };
+
     container.appendChild(btn);
 
     const div = document.createElement("div");
     div.style.fontSize = "12px";
-    div.innerHTML = desc + "<br><strong>Cost:</strong> " + costToString(cost);
-    container.appendChild(div);
 
+    // 🔥 Only show cost if NOT owned
+    if (!owned) {
+        div.innerHTML = desc + "<br><strong>Cost:</strong> " + costToString(cost);
+    } else {
+        div.innerHTML = desc;
+    }
+
+    container.appendChild(div);
     document.getElementById("pickaxeUI").appendChild(container);
 }
 
-// Gear Button
 function createGearButton(name, desc, cost) {
     const container = document.createElement("div");
     container.style.marginBottom = "6px";
 
-    const owned = ownedGears.includes(name), eq = equippedGears.includes(name);
+    const owned = ownedGears.includes(name);
+    const eq = equippedGears.includes(name);
+
     const btn = document.createElement("button");
     btn.innerText = owned ? name + (eq ? " (Equipped)" : " (Owned)") : "Buy " + name;
+
     btn.onclick = owned
         ? () => equipGear(name)
         : () => {
-            if (canAfford(cost)) { spendCost(cost); ownedGears.push(name); updateUI(); }
-            else alert("Not enough resources");
+            if (canAfford(cost)) {
+                spendCost(cost);
+                ownedGears.push(name);
+                updateUI();
+            } else alert("Not enough resources");
         };
+
     container.appendChild(btn);
 
     const div = document.createElement("div");
     div.style.fontSize = "12px";
-    div.innerHTML = desc + "<br><strong>Cost:</strong> " + costToString(cost);
-    container.appendChild(div);
 
+    if (!owned) {
+        div.innerHTML = desc + "<br><strong>Cost:</strong> " + costToString(cost);
+    } else {
+        div.innerHTML = desc;
+    }
+
+    container.appendChild(div);
     document.getElementById("gearUI").appendChild(container);
 }
 
@@ -921,7 +945,12 @@ function equipGear(name) {
 
 			const div = document.createElement("div");
 			div.style.fontSize = "12px";
-			div.innerHTML = a.desc + "<br><strong>Cost:</strong> " + costToString(a.cost);
+if (artefactLevel < lvl) {
+    div.innerHTML = a.desc + "<br><strong>Cost:</strong> " + costToString(a.cost);
+} else {
+    div.innerHTML = a.desc;
+	}
+
 			container.appendChild(div);
 
 			aUI.appendChild(container);
@@ -948,7 +977,12 @@ function equipGear(name) {
 
 			const div = document.createElement("div");
 			div.style.fontSize = "12px";
-			div.innerHTML = a.desc + "<br><strong>Cost:</strong> " + costToString(a.cost);
+			if (luckArtefactLevel < lvl) {
+    div.innerHTML = a.desc + "<br><strong>Cost:</strong> " + costToString(a.cost);
+} else {
+    div.innerHTML = a.desc;
+}
+
 			container.appendChild(div);
 
 			lUI.appendChild(container);
