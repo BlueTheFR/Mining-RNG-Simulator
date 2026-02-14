@@ -775,9 +775,15 @@ function randomOre(luckMultiplier = 1){
         const ore = ores[i];
         const data = oreData[ore];
 
-        // Apply luck multiplier
+        // Base spawn chance
         let spawnChance = (1 / data.exact) * luckMultiplier;
-        spawnChance = Math.min(spawnChance, 1);
+
+        // Luck artefact: increase chance for rare/high-tier ores only
+        if (luckArtefactLevel > 0 && data.exact >= 1000) {
+            spawnChance *= 1 + (0.1 * luckArtefactLevel); // multiplies spawn chance
+        }
+
+        spawnChance = Math.min(spawnChance, 1); // cap at 100%
 
         if(Math.random() < spawnChance){
             if(data.exact >= 250000 && data.spawnMsg){
@@ -787,11 +793,8 @@ function randomOre(luckMultiplier = 1){
         }
     }
 
-    return "Stone";
+    return "Stone"; // fallback
 }
-
-
-
 
 function randomHighTierOre(){
     const ores = Object.keys(oreData).filter(o=>oreData[o].exact>=50000);
@@ -957,11 +960,6 @@ function mineBlocks(x, y, manual=false) {
         // Triple / double multipliers from other bonuses
         if (Math.random() < tripleChance) count *= 3;
         else if (Math.random() < doubleChance) count *= 2;
-
-        // Luck artefact bonus (rare ores only)
-        if (luckArtefactLevel > 0 && data2.exact >= 1000) {
-            if (Math.random() < 0.1 * luckArtefactLevel) count++;
-        }
 
         // Upgrade chance (T6 gear)
         if (upgradeChance > 0 && Math.random() < upgradeChance) {
