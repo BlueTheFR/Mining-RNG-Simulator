@@ -771,40 +771,46 @@ function draw(){
 function randomOre() {
     const ores = Object.keys(oreData);
 
-    // Determine pickaxe multiplier
-    let pickaxeMultiplier = 1;
-    switch(equippedPickaxe) {
-        case "T6": pickaxeMultiplier = 5; break;
-        case "T7": pickaxeMultiplier = 35; break;
-        default: pickaxeMultiplier = 1;
-    }
-
-    for (let i = ores.length - 1; i >= 0; i--) {
-        const ore = ores[i];
+    // Calculate weights for each ore
+    const weights = ores.map(ore => {
         const data = oreData[ore];
 
-        // Base chance
+        // Base chance = 1 / rarity
         let baseChance = 1 / data.exact;
 
-        // Additive luck from artefacts, gears, etc. (without pickaxe)
-        let additiveChance = baseChance;
+        // Additive luck from artefacts (only for ores with exact >= 1000)
         if (luckArtefactLevel > 0 && data.exact >= 1000) {
-            additiveChance += baseChance * (luckArtefactLevel * 0.1);
+            baseChance += baseChance * (luckArtefactLevel * 0.1);
         }
 
-        // Multiply everything by pickaxe multiplier at the end
-        let finalChance = additiveChance * pickaxeMultiplier;
+        return baseChance;
+    });
 
-        if (Math.random() < finalChance) {
-            if (data.exact >= 250000 && data.spawnMsg) {
-                setTimeout(() => playSpawnSound(ore), 50);
+    // Sum all weights
+    const totalWeight = weights.reduce((sum, w) => sum + w, 0);
+
+    // Pick a random number between 0 and totalWeight
+    let random = Math.random() * totalWeight;
+
+    // Determine which ore corresponds to the random number
+    for (let i = 0; i < ores.length; i++) {
+        random -= weights[i];
+        if (random <= 0) {
+            const selectedOre = ores[i];
+
+            // Play spawn sound for very rare ores
+            if (oreData[selectedOre].exact >= 250000 && oreData[selectedOre].spawnMsg) {
+                setTimeout(() => playSpawnSound(selectedOre), 50);
             }
-            return ore;
+
+            return selectedOre;
         }
     }
 
-    return "Stone"; // fallback
+    // Fallback just in case
+    return "Stone";
 }
+
 
 
 
