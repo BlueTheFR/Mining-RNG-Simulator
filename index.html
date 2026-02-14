@@ -702,7 +702,8 @@ const pickaxeData = {
     T3:{desc:"Mines in a cross shape.", cost:{Iron:50, Ruby:15, Emerald:10}},
     T4:{desc:"do a 3x3 explosion.", cost:{Ruby:20, Sapphire:10, Emerald:5}},
     T5:{desc:"5-layer 3x3 mine. 50% chance to spawn a new 50K+ ore when mined.", cost:{Ruby:50, Sapphire:25, Topaz:20, Diamond:5, Void:3, Gold:1}},
-	T6:{desc: "7-layer 3x3 mine. 75% chance to spawn a new 10K+ ore, 25% chance to upgrade a random block. Gives 5x luck boost.", cost: {Tera: 1, TeraPlus: 1, Smiley: 5}}
+	T6:{desc: "7-layer 3x3 mine. 75% chance to spawn a new 10K+ ore, 25% chance to upgrade a random block. Gives 5x luck boost.", cost: {Tera: 1, TeraPlus: 1, Smiley: 5}},
+	T7:{desc: "5-layer 3x3 mine. Gives 25x luck boost.",cost: { NovaShard: 5, Lunarium: 2, FrostWraith: 10 }},
 };
 
 // Gear
@@ -712,7 +713,8 @@ const gearData = {
     T3:{desc:"25% chance for 3x ore, 50% chance for 2x ore.",cost:{Emerald:10, Iron:50}},
     T4:{desc:"Give a 2x Luck boost",cost:{Ruby:5, Emerald:10}},
     T5:{desc:"Give a 10x Luck boost and as a 50% to dupliate ore 2x 25% 3x and 25% for 5x",cost:{Emerald:5, Ruby:5, Sapphire:1, Void:1, Giga:1}},
-	T6:{ desc: "Give a 25x Luck boost and 25% to upgrade a mined ore by 1 tier",cost: {Peta:1, Tera:1, AlterDemon:2}}
+	T6:{ desc: "Give a 25x Luck boost and 25% to upgrade a mined ore by 1 tier",cost: {Peta:1, Tera:1, AlterDemon:2}},
+	T7: {desc: "35x Luck and increases high-tier ore spawn chance by 1% per mined block (stacks to 500%). Resets on 10M+ ore drop.",cost: {Hyperion:1, TwilightGem:1, Astralite:5, EmberPhantom:10},highTierStack: 0, maxStack: 500},
 };
 
 // Artefacts
@@ -817,70 +819,117 @@ canvas.addEventListener("click",e=>{
 
 let lastT6Upgrade = 0; // global variable to track T6 30s cooldown
 
-function mineBlocks(x, y, manual=false){
+function mineBlocks(x, y, manual=false) {
     if (spawnLock) return;
-    if(!grid[y] || !grid[y][x]) return;
+    if (!grid[y] || !grid[y][x]) return;
+
     let ore = grid[y][x];
     let data = oreData[ore];
     let targets = [[x, y]];
 
-    // Pickaxe patterns
-    if(equippedPickaxe==="T1" && Math.random()<0.25){
-        const dirs=[[1,0],[-1,0],[0,1],[0,-1]];
-        const [dx,dy]=dirs[Math.floor(Math.random()*dirs.length)];
-        targets.push([x+dx,y+dy]);
-    }
-    if(equippedPickaxe==="T2") targets=[[x,y],[x+1,y],[x-1,y]];
-    if(equippedPickaxe==="T3") targets=[[x,y],[x+1,y],[x-1,y],[x,y+1],[x,y-1]];
-    if(equippedPickaxe==="T4"){
-        targets=[];
-        for(let dx=-1;dx<=1;dx++) for(let dy=-1;dy<=1;dy++) targets.push([x+dx,y+dy]);
-    }
-    if(equippedPickaxe==="T5"){
-        targets=[];
-        for(let layer=0;layer<5;layer++)
-            for(let dx=-1;dx<=1;dx++) for(let dy=-1;dy<=1;dy++) targets.push([x+dx,y+dy]);
+    // Initialize bonuses
+    let explosionChance = 0;
+    let luckChance = 0;
+    let tripleChance = 0;
+    let doubleChance = 0;
+    let luckMultiplier = 1;
+    let upgradeChance = 0;
+
+    // Pickaxe mining patterns
+    switch (equippedPickaxe) {
+        case "T1":
+            if (Math.random() < 0.25) {
+                const dirs = [[1,0],[-1,0],[0,1],[0,-1]];
+                const [dx, dy] = dirs[Math.floor(Math.random()*dirs.length)];
+                targets.push([x+dx, y+dy]);
+            }
+            break;
+        case "T2":
+            targets = [[x,y],[x+1,y],[x-1,y]];
+            break;
+        case "T3":
+            targets = [[x,y],[x+1,y],[x-1,y],[x,y+1],[x,y-1]];
+            break;
+        case "T4":
+            targets = [];
+            for (let dx=-1; dx<=1; dx++) for (let dy=-1; dy<=1; dy++) targets.push([x+dx, y+dy]);
+            explosionChance += 0.1;
+            break;
+        case "T5":
+            targets = [];
+            for (let layer=0; layer<5; layer++)
+                for (let dx=-1; dx<=1; dx++) for (let dy=-1; dy<=1; dy++) targets.push([x+dx, y+dy]);
+            explosionChance += 0.5;
+            break;
+        case "T6":
+            targets = [];
+            for (let layer=0; layer<7; layer++)
+                for (let dx=-1; dx<=1; dx++) for (let dy=-1; dy<=1; dy++) targets.push([x+dx, y+dy+layer]);
+            luckMultiplier *= 5;
+            break;
+        case "T7":
+            targets = [];
+            for (let layer=0; layer<5; layer++)
+                for (let dx=-1; dx<=1; dx++) for (let dy=-1; dy<=1; dy++) targets.push([x+dx, y+dy+layer]);
+            luckMultiplier *= 35; // T7 luck boost
+            break;
     }
 
-    // T6 deep mine + high-tier spawn
-	if(equippedPickaxe==="T6"){
-		targets=[];
-		for(let layer=0; layer<7; layer++){
-			for(let dx=-1; dx<=1; dx++){
-				for(let dy=-1; dy<=1; dy++){
-					let tx = x + dx;
-					let ty = y + dy + layer;
-					targets.push([tx, ty]);
-				}
-			}
-	}
+    // Apply gear bonuses
+    equippedGears.forEach(g => {
+        switch(g) {
+            case "T1": explosionChance += 0.1; break;
+            case "T2": luckChance += 0.05; break;
+            case "T3": tripleChance += 0.25; doubleChance += 0.5; break;
+            case "T4": luckMultiplier *= 2; break;
+            case "T5": luckMultiplier *= 10; break;
+            case "T6": luckMultiplier *= 25; upgradeChance = 0.25; break;
+            case "T7":
+                luckMultiplier *= 35;
+                // Initialize high-tier stack safely
+                if (!gearData.T7) gearData.T7 = {};
+                if (!gearData.T7.highTierStack) gearData.T7.highTierStack = 0;
+
+                // Increment stack and clamp to 500
+                gearData.T7.highTierStack = Math.min(gearData.T7.highTierStack + 1, 500);
+
+                // Reset stack on mega ore
+                if (data.exact >= 10000000) {
+                    gearData.T7.highTierStack = 0;
+                }
+                break;
+        }
+    });
 
     // Only spawn/upgrade if mined block is ≥10K
-    if(data.exact >= 10000 && !waitingForManualHighOre){
+    if (data.exact >= 10000 && !waitingForManualHighOre) {
         const now = Date.now();
         const canUpgrade = (now - lastT6Upgrade) >= 30000;
 
-        if(Math.random() < 0.75){
-            let ux = Math.floor(Math.random()*GRID);
-            let uy = Math.floor(Math.random()*GRID);
+        // High-tier spawn chance including T7 bonus
+        let highTierChance = 0.75; // base
+        if (equippedGears.includes("T7") && gearData.T7) {
+            highTierChance += gearData.T7.highTierStack / 100;
+        }
 
-            // Pick a valid high-tier ore
+        if (Math.random() < highTierChance) {
+            let ux = Math.floor(Math.random() * GRID);
+            let uy = Math.floor(Math.random() * GRID);
+
             const highTierOres = Object.keys(oreData)
                 .filter(o => oreData[o].exact >= 10000 && oreData[o].exact <= 100000000);
-
-            if(highTierOres.length === 0) return; // safety check
+            if (highTierOres.length === 0) return;
 
             let newOre = highTierOres[Math.floor(Math.random() * highTierOres.length)];
             let upgradeCount = 0;
 
-            // Apply upgrade if cooldown passed
-            if(canUpgrade && Math.random() < 0.25){
+            if (canUpgrade && Math.random() < 0.25) {
                 let oreToUpgrade = newOre;
-                while(Math.random() < 0.25){
+                while (Math.random() < 0.25) {
                     const upgradable = Object.keys(oreData)
                         .filter(o => oreData[o].exact > oreData[oreToUpgrade].exact &&
                                      oreData[o].exact <= 100000000);
-                    if(upgradable.length === 0) break;
+                    if (upgradable.length === 0) break;
                     oreToUpgrade = upgradable[Math.floor(Math.random() * upgradable.length)];
                     upgradeCount++;
                 }
@@ -890,83 +939,58 @@ function mineBlocks(x, y, manual=false){
 
             grid[uy][ux] = newOre;
 
-            // Trigger spawn message
-            if(oreData[newOre].spawnMsg){
+            if (oreData[newOre].spawnMsg) {
                 setTimeout(() => playSpawnSound(newOre), 50);
             }
         }
     }
-}
-
-
-    // Gear and pickaxe bonuses
-    let explosionChance=0, luckChance=0, tripleChance=0, doubleChance=0, luckMultiplier=1; let upgradeChance = 0;
-    if(equippedPickaxe==="T4") explosionChance+=0.1;
-    if(equippedPickaxe==="T5") explosionChance+=0.5;
-    if(equippedPickaxe==="T6") luckMultiplier *= 5;
-
-    equippedGears.forEach(g=>{
-        switch(g){
-            case "T1": explosionChance+=0.1; break;
-            case "T2": luckChance+=0.05; break;
-            case "T3": tripleChance+=0.25; doubleChance+=0.5; break;
-            case "T4": luckMultiplier*=2; break;
-            case "T5": luckMultiplier*=10; break;
-			case "T6": luckMultiplier *= 25; upgradeChance = 0.25; break;
-		}
-	});
 
     // Mine targets
     targets.forEach(([tx, ty]) => {
-		if (tx < 0 || ty < 0 || ty >= GRID || tx >= GRID) return;
+        if (tx < 0 || ty < 0 || ty >= GRID || tx >= GRID) return;
 
-		let ore2 = grid[ty][tx]; // the ore in this cell
-		let data2 = oreData[ore2];
-		let count = 1;
+        let ore2 = grid[ty][tx];
+        let data2 = oreData[ore2];
+        let count = 1;
 
-// Apply luck / triple / double first
-if (Math.random() < luckChance * luckMultiplier) count++;
-if (Math.random() < tripleChance) count *= 3;
-else if (Math.random() < doubleChance) count *= 2;
+        // Apply luck / triple / double
+        if (Math.random() < luckChance * luckMultiplier) count++;
+        if (Math.random() < tripleChance) count *= 3;
+        else if (Math.random() < doubleChance) count *= 2;
 
-// Gear T5 bonus
-if (equippedGears.includes("T5")) {
-    let roll = Math.random();
-    if (roll < 0.25) count *= 5;
-    else if (roll < 0.5) count *= 3;
-    else count *= 2;
-}
+        // Gear T5 bonus
+        if (equippedGears.includes("T5")) {
+            let roll = Math.random();
+            if (roll < 0.25) count *= 5;
+            else if (roll < 0.5) count *= 3;
+            else count *= 2;
+        }
 
-// Luck artefact bonus
-if (luckArtefactLevel > 0 && data2.exact >= 1000) {
-    if (Math.random() < 0.1 * luckArtefactLevel) count++;
-}
+        // Luck artefact bonus
+        if (luckArtefactLevel > 0 && data2.exact >= 1000) {
+            if (Math.random() < 0.1 * luckArtefactLevel) count++;
+        }
 
-// Upgrade chance (T6 gear)
-if (upgradeChance > 0 && Math.random() < upgradeChance) {
-    const upgradable = Object.keys(oreData)
-        .filter(o => oreData[o].exact > data2.exact)
-        .sort((a, b) => oreData[a].exact - oreData[b].exact);
+        // Upgrade chance (T6 gear)
+        if (upgradeChance > 0 && Math.random() < upgradeChance) {
+            const upgradable = Object.keys(oreData)
+                .filter(o => oreData[o].exact > data2.exact)
+                .sort((a, b) => oreData[a].exact - oreData[b].exact);
+            if (upgradable.length > 0) ore2 = upgradable[0];
+        }
 
-    if (upgradable.length > 0) {
-        ore2 = upgradable[0]; // upgrade ore
-    }
-}
+        if (!inventory[ore2]) inventory[ore2] = 0;
+        inventory[ore2] += count;
+        updateRecentFind(ore2, count);
 
-// ✅ Now add to inventory
-if (!inventory[ore2]) inventory[ore2] = 0;
-inventory[ore2] += count;
-updateRecentFind(ore2, count);
+        // Replace mined block
+        grid[ty][tx] = randomOre();
+    });
 
-
-		// Replace mined block
-		grid[ty][tx] = randomOre();
-	});
-
-
-    if(manual && waitingForManualHighOre){
+    // Handle manual high ore artefact start
+    if (manual && waitingForManualHighOre) {
         let centerOre = grid[Math.floor(GRID/2)][Math.floor(GRID/2)];
-        if(oreData[centerOre].exact < 250000){
+        if (oreData[centerOre].exact < 250000) {
             waitingForManualHighOre = false;
             startArtefact();
         }
@@ -976,7 +1000,6 @@ updateRecentFind(ore2, count);
     updateUI();
     draw();
 }
-
 
 	function updateCounters() {
     totalBlocksMined = 0;
