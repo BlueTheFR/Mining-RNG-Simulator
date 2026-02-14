@@ -778,9 +778,10 @@ function randomOre() {
         // Base chance = 1 / rarity
         let baseChance = 1 / data.exact;
 
-        // Additive luck from artefacts (only for ores with exact >= 1000)
+        // Logarithmic luck scaling
         if (luckArtefactLevel > 0 && data.exact >= 1000) {
-            baseChance += baseChance * (luckArtefactLevel * 0.1);
+            // This scales luck gently even at high levels
+            baseChance += baseChance * Math.log10(luckArtefactLevel + 1) * 0.05;
         }
 
         return baseChance;
@@ -810,6 +811,7 @@ function randomOre() {
     // Fallback just in case
     return "Stone";
 }
+
 
 
 
