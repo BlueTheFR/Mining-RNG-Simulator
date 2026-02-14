@@ -693,6 +693,9 @@ const rarityColors = {
 	Zenith: "#DF03FC",
 	Eternal: "#00FBFF",
 };
+const rarityOrder = ["Common","Uncommon","Rare","Epic","Legendary","Legendary+",
+                     "Mythic","Exotic","Exquisite","Transcendent","Enigmatic",
+                     "Unfathomable","Otherworldly","Imaginary","Divine","Zenith","Eternal"];
 
 // Pickaxes
 const pickaxeData = {
@@ -983,12 +986,24 @@ function mineBlocks(x, y, manual=false) {
         else if (Math.random() < doubleChance) count *= 2;
 
         // Upgrade chance (T6 gear)
-        if (upgradeChance > 0 && Math.random() < upgradeChance) {
-            const upgradable = Object.keys(oreData)
-                .filter(o => oreData[o].exact > data2.exact)
-                .sort((a, b) => oreData[a].exact - oreData[b].exact);
-            if (upgradable.length > 0) ore2 = upgradable[0];
+        // Upgrade chance (T6 gear) — 5% chance to upgrade 1 rarity tier
+if (equippedGears.includes("T6") && Math.random() < 0.05) { // 5% chance
+    const currentRarity = data2.rarity;
+    const currentIndex = rarityOrder.indexOf(currentRarity);
+
+    if (currentIndex >= 0 && currentIndex < rarityOrder.length - 1) {
+        const nextRarity = rarityOrder[currentIndex + 1];
+
+        // Get all ores in that next rarity
+        const candidates = Object.keys(oreData).filter(o => oreData[o].rarity === nextRarity);
+
+        if (candidates.length > 0) {
+            // Pick one randomly
+            ore2 = candidates[Math.floor(Math.random() * candidates.length)];
         }
+    }
+}
+
 
         if (!inventory[ore2]) inventory[ore2] = 0;
         inventory[ore2] += count;
