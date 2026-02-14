@@ -768,26 +768,29 @@ function draw(){
     }
 }
 
-function randomOre(){
+function randomOre(luckMultiplier = 1){
     const ores = Object.keys(oreData);
 
-    for(let i=ores.length-1;i>=0;i--){
-        const ore=ores[i];
-        const data=oreData[ore];
+    for(let i = ores.length - 1; i >= 0; i--){
+        const ore = ores[i];
+        const data = oreData[ore];
 
-        if(Math.random() < 1/data.exact){
+        // Apply luck multiplier
+        let spawnChance = (1 / data.exact) * luckMultiplier;
+        spawnChance = Math.min(spawnChance, 1);
 
-            // 🔥 IF RARE ORE SPAWNS → TRIGGER SOUND + MESSAGE
+        if(Math.random() < spawnChance){
             if(data.exact >= 250000 && data.spawnMsg){
                 setTimeout(() => playSpawnSound(ore), 50);
             }
-
             return ore;
         }
     }
 
     return "Stone";
 }
+
+
 
 
 function randomHighTierOre(){
@@ -829,7 +832,6 @@ function mineBlocks(x, y, manual=false) {
 
     // Initialize bonuses
     let explosionChance = 0;
-    let luckChance = 0;
     let tripleChance = 0;
     let doubleChance = 0;
     let luckMultiplier = 1;
@@ -871,7 +873,7 @@ function mineBlocks(x, y, manual=false) {
             targets = [];
             for (let layer=0; layer<5; layer++)
                 for (let dx=-1; dx<=1; dx++) for (let dy=-1; dy<=1; dy++) targets.push([x+dx, y+dy+layer]);
-            luckMultiplier *= 35; // T7 luck boost
+            luckMultiplier *= 35;
             break;
     }
 
@@ -879,24 +881,16 @@ function mineBlocks(x, y, manual=false) {
     equippedGears.forEach(g => {
         switch(g) {
             case "T1": explosionChance += 0.1; break;
-            case "T2": luckChance += 0.05; break;
             case "T3": tripleChance += 0.25; doubleChance += 0.5; break;
             case "T4": luckMultiplier *= 2; break;
             case "T5": luckMultiplier *= 10; break;
             case "T6": luckMultiplier *= 25; upgradeChance = 0.25; break;
             case "T7":
                 luckMultiplier *= 35;
-                // Initialize high-tier stack safely
                 if (!gearData.T7) gearData.T7 = {};
                 if (!gearData.T7.highTierStack) gearData.T7.highTierStack = 0;
-
-                // Increment stack and clamp to 500
                 gearData.T7.highTierStack = Math.min(gearData.T7.highTierStack + 1, 500);
-
-                // Reset stack on mega ore
-                if (data.exact >= 10000000) {
-                    gearData.T7.highTierStack = 0;
-                }
+                if (data.exact >= 10000000) gearData.T7.highTierStack = 0;
                 break;
         }
     });
@@ -906,8 +900,7 @@ function mineBlocks(x, y, manual=false) {
         const now = Date.now();
         const canUpgrade = (now - lastT6Upgrade) >= 30000;
 
-        // High-tier spawn chance including T7 bonus
-        let highTierChance = 0.75; // base
+        let highTierChance = 0.75;
         if (equippedGears.includes("T7") && gearData.T7) {
             highTierChance += gearData.T7.highTierStack / 100;
         }
@@ -939,9 +932,7 @@ function mineBlocks(x, y, manual=false) {
 
             grid[uy][ux] = newOre;
 
-            if (oreData[newOre].spawnMsg) {
-                setTimeout(() => playSpawnSound(newOre), 50);
-            }
+            if (oreData[newOre].spawnMsg) setTimeout(() => playSpawnSound(newOre), 50);
         }
     }
 
@@ -953,12 +944,9 @@ function mineBlocks(x, y, manual=false) {
         let data2 = oreData[ore2];
         let count = 1;
 
-        // Apply luck / triple / double
-        if (Math.random() < luckChance * luckMultiplier) count++;
-        if (Math.random() < tripleChance) count *= 3;
-        else if (Math.random() < doubleChance) count *= 2;
-
-        // Gear T5 bonus
+        // Duplication from gears only
+        if (equippedGears.includes("T2") && Math.random() < 0.05) count++;
+        if (equippedGears.includes("T3") && Math.random() < 0.25) count *= 2;
         if (equippedGears.includes("T5")) {
             let roll = Math.random();
             if (roll < 0.25) count *= 5;
@@ -966,7 +954,11 @@ function mineBlocks(x, y, manual=false) {
             else count *= 2;
         }
 
-        // Luck artefact bonus
+        // Triple / double multipliers from other bonuses
+        if (Math.random() < tripleChance) count *= 3;
+        else if (Math.random() < doubleChance) count *= 2;
+
+        // Luck artefact bonus (rare ores only)
         if (luckArtefactLevel > 0 && data2.exact >= 1000) {
             if (Math.random() < 0.1 * luckArtefactLevel) count++;
         }
@@ -987,7 +979,7 @@ function mineBlocks(x, y, manual=false) {
         grid[ty][tx] = randomOre();
     });
 
-    // Handle manual high ore artefact start
+    // Manual artefact start
     if (manual && waitingForManualHighOre) {
         let centerOre = grid[Math.floor(GRID/2)][Math.floor(GRID/2)];
         if (oreData[centerOre].exact < 250000) {
@@ -1000,6 +992,7 @@ function mineBlocks(x, y, manual=false) {
     updateUI();
     draw();
 }
+
 
 	function updateCounters() {
     totalBlocksMined = 0;
