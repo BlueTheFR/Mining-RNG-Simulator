@@ -820,24 +820,31 @@ function randomOre() {
 
 
 
-function randomHighTierOre(){
-    const ores = Object.keys(oreData).filter(o=>oreData[o].exact>=50000);
+function randomHighTierOre() {
+    const ores = Object.keys(oreData).filter(o => oreData[o].exact >= 50000);
 
-    for(let i=ores.length-1;i>=0;i--){
-        const ore=ores[i];
+    for (let i = ores.length - 1; i >= 0; i--) {
+        const ore = ores[i];
 
-        if(Math.random() < (1 / (oreData[ore].exact * 50))) {
+        let chance = 1 / (oreData[ore].exact * 50);
 
-            if(oreData[ore].exact >= 250000 && oreData[ore].spawnMsg){
+        // Apply T7 additive bonus
+        if (equippedGears.includes("T7") && gearData.T7) {
+            chance += gearData.T7.highTierStack / 10000; 
+            // highTierStack max 500 → max 0.05 = +5% additive chance
+        }
+
+        if (Math.random() < chance) {
+            if (oreData[ore].exact >= 250000 && oreData[ore].spawnMsg) {
                 setTimeout(() => playSpawnSound(ore), 50);
             }
-
             return ore;
         }
     }
 
     return ores[0];
 }
+
 
 // Mining
 canvas.addEventListener("click",e=>{
