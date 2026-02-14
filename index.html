@@ -768,25 +768,35 @@ function draw(){
     }
 }
 
-function randomOre(luckMultiplier = 1){
+function randomOre() {
     const ores = Object.keys(oreData);
 
-    for(let i = ores.length - 1; i >= 0; i--){
+    // Determine pickaxe multiplier
+    let pickaxeMultiplier = 1;
+    switch(equippedPickaxe) {
+        case "T6": pickaxeMultiplier = 5; break;
+        case "T7": pickaxeMultiplier = 35; break;
+        default: pickaxeMultiplier = 1;
+    }
+
+    for (let i = ores.length - 1; i >= 0; i--) {
         const ore = ores[i];
         const data = oreData[ore];
 
-        // Base spawn chance
-        let spawnChance = (1 / data.exact) * luckMultiplier;
+        // Base chance
+        let baseChance = 1 / data.exact;
 
-        // Luck artefact: increase chance for rare/high-tier ores only
+        // Additive luck from artefacts, gears, etc. (without pickaxe)
+        let additiveChance = baseChance;
         if (luckArtefactLevel > 0 && data.exact >= 1000) {
-            spawnChance *= 1 + (0.1 * luckArtefactLevel); // multiplies spawn chance
+            additiveChance += baseChance * (luckArtefactLevel * 0.1);
         }
 
-        spawnChance = Math.min(spawnChance, 1); // cap at 100%
+        // Multiply everything by pickaxe multiplier at the end
+        let finalChance = additiveChance * pickaxeMultiplier;
 
-        if(Math.random() < spawnChance){
-            if(data.exact >= 250000 && data.spawnMsg){
+        if (Math.random() < finalChance) {
+            if (data.exact >= 250000 && data.spawnMsg) {
                 setTimeout(() => playSpawnSound(ore), 50);
             }
             return ore;
@@ -795,6 +805,9 @@ function randomOre(luckMultiplier = 1){
 
     return "Stone"; // fallback
 }
+
+
+
 
 function randomHighTierOre(){
     const ores = Object.keys(oreData).filter(o=>oreData[o].exact>=50000);
@@ -885,11 +898,11 @@ function mineBlocks(x, y, manual=false) {
         switch(g) {
             case "T1": explosionChance += 0.1; break;
             case "T3": tripleChance += 0.25; doubleChance += 0.5; break;
-            case "T4": luckMultiplier *= 2; break;
-            case "T5": luckMultiplier *= 10; break;
-            case "T6": luckMultiplier *= 25; upgradeChance = 0.25; break;
+            case "T4": luckMultiplier += 2; break;
+            case "T5": luckMultiplier += 10; break;
+            case "T6": luckMultiplier += 25; upgradeChance = 0.25; break;
             case "T7":
-                luckMultiplier *= 35;
+                luckMultiplier += 35;
                 if (!gearData.T7) gearData.T7 = {};
                 if (!gearData.T7.highTierStack) gearData.T7.highTierStack = 0;
                 gearData.T7.highTierStack = Math.min(gearData.T7.highTierStack + 1, 500);
