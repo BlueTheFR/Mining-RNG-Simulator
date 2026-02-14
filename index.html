@@ -1381,6 +1381,42 @@ function showOreViewer(ore) {
 replaySpawn.onclick = () => {
     if (lastSpawnOre) playSpawnSound(lastSpawnOre);
 };
+function applyOfflineEarnings() {
+    if (artefactLevel === 0) return;
+
+    const last = parseInt(localStorage.getItem("lastOnline")) || Date.now();
+    const now = Date.now();
+    const elapsedMS = now - last;
+
+    const a = artefactData[artefactLevel];
+
+    // Number of intervals offline
+    let intervals = Math.floor(elapsedMS / a.interval);
+
+    // If you want slower offline, divide intervals by 10
+    // intervals = Math.floor(intervals / 10);
+
+    let totalMined = 0;
+
+    // Mine each interval using pickaxe logic
+    for (let i = 0; i < intervals; i++) {
+        // Pick the center of the grid for offline mining
+        const center = Math.floor(GRID / 2);
+        for (let b = 0; b < a.blocks; b++) {
+            // mineBlocks respects the equipped pickaxe & gear
+            mineBlocks(center, center, false);
+            totalMined += 1; // approximate count
+        }
+    }
+
+    localStorage.setItem("lastOnline", now.toString());
+    updateCounters();
+    updateUI();
+
+    console.log(`Offline mining applied: approx ${totalMined} blocks using ${equippedPickaxe}`);
+}
+
+
 
 function saveGame(showAlert = true) {
     localStorage.setItem("MiningRNGSimulator", JSON.stringify({
@@ -1422,6 +1458,18 @@ function loadGame() {
         currentVolumeIndex = 0;
     }
 }
+window.addEventListener('load', () => {
+    generateGrid();
+    draw();
+
+    applyOfflineEarnings(); // calculate first
+    startArtefact();        // then start mining
+
+    // AFTER applying offline earnings, update lastOnline
+    localStorage.setItem("lastOnline", Date.now().toString());
+});
+
+
 function resetGame() { 
     localStorage.removeItem("MiningRNGSimulator"); 
     location.reload(); 
