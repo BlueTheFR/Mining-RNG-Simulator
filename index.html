@@ -707,6 +707,7 @@ const pickaxeData = {
     T5:{desc:"5-layer 3x3 mine. 50% chance to spawn a new 50K+ ore when mined.", cost:{Ruby:50, Sapphire:25, Topaz:20, Diamond:5, Void:3, Gold:1}},
 	T6:{desc: "7-layer 3x3 mine. 75% chance to spawn a new 10K+ ore, 25% chance to upgrade a random block. Gives 5x luck boost.", cost: {Tera: 1, TeraPlus: 1, Smiley: 5}},
 	T7:{desc: "5-layer 3x3 mine. Gives 25x luck boost.",cost: { NovaShard: 5, Lunarium: 2, FrostWraith: 10 }},
+	T8:{desc: "5-layer 3x3 mine. Gives 50x luck boost.",cost: { ShadowFragment: 2, NightCore: 5, AbyssGem: 1 }},
 };
 
 // Gear
@@ -718,6 +719,7 @@ const gearData = {
     T5:{desc:"Give +10 Luck boost and as a 50% to dupliate ore 2x 25% 3x and 25% for 5x",cost:{Emerald:5, Ruby:5, Sapphire:1, Void:1, Giga:1}},
 	T6:{ desc: "Give +25 Luck boost and 5% to upgrade a mined ore by 1 tier",cost: {Peta:1, Tera:1, AlterDemon:2}},
 	T7: {desc: "Give +35 Luck and increases high-tier ore spawn chance by 1% per mined block (stacks to 500%). Resets on 10M+ ore drop.",cost: {Hyperion:1, TwilightGem:1, Astralite:5, EmberPhantom:10},highTierStack: 0, maxStack: 500},
+	T8:{desc: "+50 Luck bonus. 1% chance to multiply mined ores <100K by 100×", cost: { Stone: 10000000, Iron: 2000000, OblivionCore: 1 }},
 };
 
 // Artefacts
@@ -909,6 +911,17 @@ function mineBlocks(x, y, manual=false) {
                 for (let dx=-1; dx<=1; dx++) for (let dy=-1; dy<=1; dy++) targets.push([x+dx, y+dy+layer]);
             luckMultiplier *= 35;
             break;
+			case "T8":
+    targets = [];
+    for (let layer = 0; layer < 5; layer++) {
+        for (let dx = -1; dx <= 1; dx++) {
+            for (let dy = -1; dy <= 1; dy++) {
+                targets.push([x + dx, y + dy + layer]);
+            }
+        }
+    }
+    luckMultiplier *= 50;
+    break;
     }
 
     // Apply gear bonuses
@@ -926,6 +939,16 @@ function mineBlocks(x, y, manual=false) {
                 gearData.T7.highTierStack = Math.min(gearData.T7.highTierStack + 1, 500);
                 if (data.exact >= 10000000) gearData.T7.highTierStack = 0;
                 break;
+			// T8 Gear effect
+if (equippedGears.includes("T8") && gearData.T8) {
+    luckMultiplier += 50; // massive luck boost
+
+    // 1% chance to multiply mined ore below 100K by 100x
+    if (oreData[ore2].exact < 100000 && Math.random() < 0.01) {
+        count *= 100;
+    }
+}
+
         }
     });
 
