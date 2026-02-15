@@ -228,6 +228,7 @@
         <button id="sortToggle" onclick="toggleSort()">Sort: Common → Rarest</button>
         <button id="compactToggle" onclick="toggleCompact()">Compact: Off</button>
 		<button id="volumeToggle" onclick="toggleVolume()">Volume: 100%</button>
+		<button id="spawnToggle" onclick="toggleSpawn()">Spawn Messages: On</button>
     </div>
 
     <div id="spawnEffect"></div>
@@ -320,6 +321,13 @@
 		let recentFinds = [];
 		let volumeLevels = [1, 0.75, 0.5, 0.25, 0.05, 0];
 		let currentVolumeIndex = 0;
+		let spawnMessagesEnabled = true;
+		
+		function toggleSpawn() {
+    spawnMessagesEnabled = !spawnMessagesEnabled;
+    document.getElementById("spawnToggle").innerText =
+        `Spawn Messages: ${spawnMessagesEnabled ? "On" : "Off"}`;
+}
 
 		
 		function toggleCompact() {
@@ -358,6 +366,8 @@
 }
 	
         function playSpawnSound(ore) {
+    if (!spawnMessagesEnabled) return; // <-- Skip everything if disabled
+
     if (spawnLock) return;
 
     const data = oreData[ore];
@@ -369,7 +379,6 @@
     msgDiv.innerText = data.spawnMsg;
     msgDiv.style.color = rarityColors[data.rarity] || "#ffffff";
     msgDiv.style.display = "block";
-
     let audioId = null;
     const exact = data.exact;
 
