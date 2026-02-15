@@ -860,6 +860,7 @@ const pickaxeData = {
 	T6:{desc: "7-layer 3x3 mine. 75% chance to spawn a new 10K+ ore, 25% chance to upgrade a random block. Gives 5x luck boost.", cost: {Tera: 1, TeraPlus: 1, Smiley: 5}},
 	T7:{desc: "5-layer 3x3 mine. Gives 25x luck boost.",cost: { NovaShard: 5, Lunarium: 2, FrostWraith: 10 }},
 	T8:{desc: "5-layer 3x3 mine. Gives 50x luck boost.",cost: { ShadowFragment: 2, NightCore: 5, AbyssGem: 1 }},
+	T9:{desc: "Mines 5 layers in 3x3. Gives 75× luck multiplier. Every 5M blocks mined, guarantees a 50M+ ore spawn.",cost: { ShadowFragment: 5, PhantomCrystal: 5, AbyssGem: 2, ZergHunter: 1 }},
 };
 
 // Gear
@@ -870,8 +871,9 @@ const gearData = {
     T4:{desc:"Give  +2 Luck boost",cost:{Ruby:5, Emerald:10}},
     T5:{desc:"Give +10 Luck boost and as a 50% to dupliate ore 2x 25% 3x and 25% for 5x",cost:{Emerald:5, Ruby:5, Sapphire:1, Void:1, Giga:1}},
 	T6:{ desc: "Give +25 Luck boost and 5% to upgrade a mined ore by 1 tier",cost: {Peta:1, Tera:1, AlterDemon:2}},
-	T7: {desc: "Give +35 Luck and increases high-tier ore spawn chance by 1% per mined block (stacks to 500%). Resets on 10M+ ore drop.",cost: {Hyperion:1, TwilightGem:1, Astralite:5, EmberPhantom:10},highTierStack: 0, maxStack: 500},
+	T7:{desc: "Give +35 Luck and increases high-tier ore spawn chance by 1% per mined block (stacks to 500%). Resets on 10M+ ore drop.",cost: {Hyperion:1, TwilightGem:1, Astralite:5, EmberPhantom:10},highTierStack: 0, maxStack: 500},
 	T8:{desc: "+50 Luck bonus. 1% chance to multiply mined ores <100K by 100×", cost: { Stone: 10000000, Iron: 2000000, OblivionCore: 1 }},
+	T9:{desc: "+75 Luck bonus. 20% chance to upgrade a mined ore by 1 rarity tier",cost: {Quantumite: 20,FrostWraith: 100,FrostShard: 2}},
 };
 
 // Artefacts
@@ -1009,6 +1011,7 @@ canvas.addEventListener("click",e=>{
 });
 
 let lastT6Upgrade = 0; // global variable to track T6 30s cooldown
+let t9MinedCounter = 0;
 
 function mineBlocks(x, y, manual=false) {
     if (spawnLock) return;
@@ -1063,17 +1066,28 @@ function mineBlocks(x, y, manual=false) {
                 for (let dx=-1; dx<=1; dx++) for (let dy=-1; dy<=1; dy++) targets.push([x+dx, y+dy+layer]);
             luckMultiplier *= 35;
             break;
-			case "T8":
-    targets = [];
-    for (let layer = 0; layer < 5; layer++) {
-        for (let dx = -1; dx <= 1; dx++) {
-            for (let dy = -1; dy <= 1; dy++) {
-                targets.push([x + dx, y + dy + layer]);
+        case "T8":
+            targets = [];
+            for (let layer = 0; layer < 5; layer++) {
+                for (let dx = -1; dx <= 1; dx++) {
+                    for (let dy = -1; dy <= 1; dy++) {
+                        targets.push([x + dx, y + dy + layer]);
+                    }
+                }
             }
-        }
-    }
-    luckMultiplier *= 50;
-    break;
+            luckMultiplier *= 50;
+            break;
+        case "T9":
+            targets = [];
+            for (let layer = 0; layer < 5; layer++) {
+                for (let dx = -1; dx <= 1; dx++) {
+                    for (let dy = -1; dy <= 1; dy++) {
+                        targets.push([x + dx, y + dy + layer]);
+                    }
+                }
+            }
+            luckMultiplier *= 75; // T9 luck boost
+            break;
     }
 
     // Apply gear bonuses
@@ -1091,16 +1105,9 @@ function mineBlocks(x, y, manual=false) {
                 gearData.T7.highTierStack = Math.min(gearData.T7.highTierStack + 1, 500);
                 if (data.exact >= 10000000) gearData.T7.highTierStack = 0;
                 break;
-			// T8 Gear effect
-if (equippedGears.includes("T8") && gearData.T8) {
-    luckMultiplier += 50; // massive luck boost
-
-    // 1% chance to multiply mined ore below 100K by 100x
-    if (oreData[ore2].exact < 100000 && Math.random() < 0.01) {
-        count *= 100;
-    }
-}
-
+            case "T9":
+                luckMultiplier += 75; // extra +75 luck
+                break;
         }
     });
 
@@ -1145,6 +1152,9 @@ if (equippedGears.includes("T8") && gearData.T8) {
         }
     }
 
+    // --- T9 upgrade tracker ---
+    let t9UpgradeApplied = false;
+
     // Mine targets
     targets.forEach(([tx, ty]) => {
         if (tx < 0 || ty < 0 || ty >= GRID || tx >= GRID) return;
@@ -1153,7 +1163,7 @@ if (equippedGears.includes("T8") && gearData.T8) {
         let data2 = oreData[ore2];
         let count = 1;
 
-        // Duplication from gears only
+        // Duplication from gears
         if (equippedGears.includes("T2") && Math.random() < 0.05) count++;
         if (equippedGears.includes("T3") && Math.random() < 0.25) count *= 2;
         if (equippedGears.includes("T5")) {
@@ -1163,29 +1173,37 @@ if (equippedGears.includes("T8") && gearData.T8) {
             else count *= 2;
         }
 
-        // Triple / double multipliers from other bonuses
         if (Math.random() < tripleChance) count *= 3;
         else if (Math.random() < doubleChance) count *= 2;
 
-        // Upgrade chance (T6 gear)
-        // Upgrade chance (T6 gear) — 5% chance to upgrade 1 rarity tier
-if (equippedGears.includes("T6") && Math.random() < 0.05) { // 5% chance
-    const currentRarity = data2.rarity;
-    const currentIndex = rarityOrder.indexOf(currentRarity);
+        // T6 Gear: 5% upgrade mined ore
+        if (equippedGears.includes("T6") && Math.random() < 0.05) {
+            const currentRarity = data2.rarity;
+            const currentIndex = rarityOrder.indexOf(currentRarity);
 
-    if (currentIndex >= 0 && currentIndex < rarityOrder.length - 1) {
-        const nextRarity = rarityOrder[currentIndex + 1];
-
-        // Get all ores in that next rarity
-        const candidates = Object.keys(oreData).filter(o => oreData[o].rarity === nextRarity);
-
-        if (candidates.length > 0) {
-            // Pick one randomly
-            ore2 = candidates[Math.floor(Math.random() * candidates.length)];
+            if (currentIndex >= 0 && currentIndex < rarityOrder.length - 1) {
+                const nextRarity = rarityOrder[currentIndex + 1];
+                const candidates = Object.keys(oreData).filter(o => oreData[o].rarity === nextRarity);
+                if (candidates.length > 0) {
+                    ore2 = candidates[Math.floor(Math.random() * candidates.length)];
+                }
+            }
         }
-    }
-}
 
+        // --- T9 Gear: 20% chance to upgrade mined ore, only once per mining action ---
+        if (!t9UpgradeApplied && equippedGears.includes("T9") && Math.random() < 0.2) {
+            const currentRarity = data2.rarity;
+            const currentIndex = rarityOrder.indexOf(currentRarity);
+
+            if (currentIndex >= 0 && currentIndex < rarityOrder.length - 1) {
+                const nextRarity = rarityOrder[currentIndex + 1];
+                const candidates = Object.keys(oreData).filter(o => oreData[o].rarity === nextRarity);
+                if (candidates.length > 0) {
+                    ore2 = candidates[Math.floor(Math.random() * candidates.length)];
+                    t9UpgradeApplied = true; // prevent further upgrades this click
+                }
+            }
+        }
 
         if (!inventory[ore2]) inventory[ore2] = 0;
         inventory[ore2] += count;
@@ -1208,7 +1226,6 @@ if (equippedGears.includes("T6") && Math.random() < 0.05) { // 5% chance
     updateUI();
     draw();
 }
-
 
 	function updateCounters() {
     totalBlocksMined = 0;
