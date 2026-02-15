@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta charset="UTF-8">
     <title>Mining RNG Simulator</title>
     <style>
@@ -206,7 +207,7 @@
 
         #oreName {
             font-weight:bold;
-            font-size:16px;
+            font-size:12px;
         }
 
         #oreRarity {
@@ -214,9 +215,151 @@
         }
 
         #replaySpawn {
-            padding:6px;
-            width:100%;
-        }
+        width: 100%;
+        font-size: 12px;       /* smaller button text */
+        padding: 6px;
+        margin-top: 4px;
+        box-sizing: border-box;
+    }
+		/* =========================
+   📱 MOBILE FIX (NO PC CHANGES)
+   ========================= */
+
+@media (max-width: 768px) {
+
+    body {
+        align-items: center;
+        padding: 10px;
+        overflow-x: hidden;
+    }
+
+    /* Canvas scaling */
+    #game {
+        margin-left: 0 !important;
+        width: 90vw;
+        height: 90vw;
+        max-width: 350px;
+        max-height: 350px;
+    }
+
+    /* Recent finds becomes normal block */
+    #recentFind {
+        position: relative !important;
+        left: auto !important;
+        top: auto !important;
+        width: 95%;
+        max-width: 400px;
+        margin: 10px auto;
+    }
+
+    /* Save buttons stack */
+    #saveReset {
+        position: relative !important;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 5px;
+        margin-bottom: 10px;
+    }
+
+    #saveReset button {
+        width: 48%;
+        font-size: 13px;
+        padding: 8px;
+    }
+
+    /* Block counters move into flow */
+    #blockCounters {
+        position: relative !important;
+        text-align: center;
+        margin-bottom: 10px;
+    }
+
+    /* Main UI panels stack vertically */
+    #ui {
+        width: 100% !important;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    #pickaxeUI,
+    #gearUI,
+    #artefactUI,
+    #luckArtefactUI {
+        width: 95% !important;
+        height: auto;
+        max-height: 250px;
+        margin-right: 0;
+    }
+
+    /* Bottom panels stack */
+    #bottomPanels {
+        flex-direction: column;
+        width: 100% !important;
+    }
+
+    #oreIndex,
+		#inventory {
+        width: 95% !important;
+        height: 200px;
+    }
+
+	#oreViewer {
+		display: none;
+        width: 80%;           /* smaller width */
+        max-width: 250px;     /* max width */
+        height: auto;         /* allow height to adjust */
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 6px;
+        font-size: 12px;      /* smaller base font */
+        z-index: 99999;
+        flex-direction: column;
+        align-items: center;
+        box-sizing: border-box;
+    }
+
+    /* Ore block inside viewer */
+    #oreBlock {
+        width: 100%;
+        height: 80px;         /* reduce height for mobile */
+        font-size: 40px;      /* scale symbol size */
+        margin-bottom: 6px;
+    }
+
+    /* Ore name and rarity */
+    #oreName, #oreRarity {
+        font-size: 12px;      /* smaller text */
+        text-align: center;
+        margin-bottom: 4px;
+        word-break: break-word; /* prevent overflow */
+    }
+
+    /* Replay button */
+    #replaySpawn {
+        width: 100%;
+        font-size: 12px;       /* smaller button text */
+        padding: 6px;
+        margin-top: 4px;
+        box-sizing: border-box;
+    }
+
+	/* Bigger tap buttons for mobile */
+	button {
+		font-size: 14px;
+		padding: 10px;
+	}
+	#spawnMessage {
+        top: 10px;             /* position near top of viewport */
+        left: 50%;             /* keep horizontally centered */
+        transform: translateX(-50%); /* horizontal centering only */
+        font-size: 20px;       /* slightly smaller for mobile */
+        padding: 15px 25px;    /* adjust padding */
+        border-radius: 10px;   /* softer corners */
+    }
+}
+
+
 
     </style>
 </head>
