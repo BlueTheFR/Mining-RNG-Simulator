@@ -571,7 +571,7 @@
         /* =========================
            🔥 ETERNAL EFFECT
         ========================== */
-        if (data.rarity === "Eternal") {
+        if (data.rarity === "Eternal" || data.rarity === "SPAFF")  {
 
             const overlay = document.getElementById("spawnEffect");
 
@@ -656,30 +656,41 @@
    🌠 IMAGINARY EFFECT (OVER CANVAS)
 ========================= */
 if (data.rarity === "Imaginary") {
-
     const canvas = document.getElementById("game");
 
     const block = document.createElement("div");
-
     block.style.position = "absolute";
     block.style.top = canvas.offsetTop + canvas.height / 2 + "px";
     block.style.left = canvas.offsetLeft + canvas.width / 2 + "px";
     block.style.transform = "translate(-50%, -50%) scale(1.5)";
     block.style.width = "180px";
     block.style.height = "180px";
-    block.style.background = data.color;
     block.style.display = "flex";
     block.style.alignItems = "center";
     block.style.justifyContent = "center";
-    block.style.fontSize = "70px";
-    block.style.fontWeight = "bold";
-    block.style.color = data.symbolColor || "#fff";
     block.style.borderRadius = "20px";
-    block.style.zIndex = "5";
+    block.style.zIndex = "10000";
     block.style.pointerEvents = "none";
     block.style.animation = "imaginaryPulseAnim 1.5s infinite ease-in-out";
+    block.style.background = "transparent"; // let image show through
 
-    block.innerText = data.symbol || "";
+    // Check if there's a preloaded image for this ore
+    const img = oreImages[ore];
+    if (img) {
+        img.style.width = "100%";
+        img.style.height = "100%";
+        img.style.objectFit = "contain"; // keeps aspect ratio
+        block.appendChild(img.cloneNode()); // use a clone to avoid removing from oreImages
+    } else {
+        // fallback to colored block + symbol
+        block.style.background = data.color;
+        const span = document.createElement("span");
+        span.innerText = data.symbol || "";
+        span.style.fontSize = "70px";
+        span.style.fontWeight = "bold";
+        span.style.color = data.symbolColor || "#fff";
+        block.appendChild(span);
+    }
 
     document.body.appendChild(block);
 
@@ -710,20 +721,16 @@ function updateRecentFind(ore) {
 
     if (data.exact < 250000) return; // only rare/high-tier ores
 
-    // Add new find at the start
     recentFinds.unshift({
         name: ore,
         rarity: data.rarity,
         exact: data.exact,
         color: data.color,
-        symbol: data.symbol || "",
-        symbolColor: data.symbolColor || "#fff"
+        symbol: data.symbol || ""
     });
 
-    // Keep only 5 items
     recentFinds = recentFinds.slice(0, 5);
 
-    // Update DOM
     const div = document.getElementById("recentFindContent");
     div.innerHTML = "";
 
@@ -733,28 +740,37 @@ function updateRecentFind(ore) {
         fDiv.style.alignItems = "center";
         fDiv.style.marginBottom = "6px";
 
-        const colorBox = document.createElement("div");
-        colorBox.style.width = "24px";
-        colorBox.style.height = "24px";
-        colorBox.style.background = f.color;
-        colorBox.style.color = f.symbolColor;
-        colorBox.style.display = "flex";
-        colorBox.style.alignItems = "center";
-        colorBox.style.justifyContent = "center";
-        colorBox.style.fontWeight = "bold";
-        colorBox.style.marginRight = "6px";
-        colorBox.innerText = f.symbol;
+        const box = document.createElement("div");
+        box.style.width = "24px";
+        box.style.height = "24px";
+        box.style.marginRight = "6px";
+        box.style.display = "flex";
+        box.style.alignItems = "center";
+        box.style.justifyContent = "center";
+        box.style.fontWeight = "bold";
+
+        if (oreImages[f.name]) {
+            const img = oreImages[f.name].cloneNode(); // clone so multiple uses don’t interfere
+            img.style.width = "24px";
+            img.style.height = "24px";
+            box.appendChild(img);
+        } else {
+            box.style.background = f.color;
+            box.style.color = "#fff";
+            box.innerText = f.symbol;
+        }
 
         const text = document.createElement("div");
         text.innerText = `${f.name} (${f.rarity}) - 1 in ${formatNumber(f.exact)}`;
         text.style.fontSize = "14px";
         text.style.flex = "1";
 
-        fDiv.appendChild(colorBox);
+        fDiv.appendChild(box);
         fDiv.appendChild(text);
         div.appendChild(fDiv);
     });
 }
+
 
 function toggleSpawnFilter() {
     const rarities = ["Exotic","Exquisite","Transcendent","Enigmatic","Unfathomable","Otherworldly","Imaginary","Zenith","Eternal"];
@@ -820,13 +836,13 @@ const oreData = {
     CosmicRelic:{rarity:"Otherworldly",value:35,color:"#ff6867",symbol:"CR",symbolColor:"#00ffff",spawnMsg:"The fabric of existence tears apart!",exact:750000000},
     Singularity:{rarity:"Imaginary",value:36,color:"#000000",symbol:"Ω",symbolColor:"#ff00ff",spawnMsg:"Time stops. Space collapses. You found the impossible.",exact:2000000000},
     AlterDemon:{rarity:"Divine",value:37,color:"#000000",symbol:"AD",symbolColor:"#ff0000",spawnMsg:"Alters demon is here to catch you",exact:1000000},
-    Veritcal:{rarity:"Imaginary",value:38,color:"#90D5FF",symbol:"Vert",symbolColor:"#000000",spawnMsg:"You shouldn't dig straight down",exact:4444444444},
+    Veritcal:{rarity:"Imaginary",value:38,color:"#90D5FF",symbol:"Vert",symbolColor:"#000000",spawnMsg:"You shouldn't dig straight down",exact:4444444444, imgSrc: "Vert.png"},
     Zanacharium:{rarity:"Zenith",value:39,color:"#DF03FC",symbol:"?",symbolColor:"#000000",spawnMsg:"An unusual force materializes upon the surface of this world...",exact:68750000000},
     Chronovexium:{rarity:"Zenith",value:40,color:"#00F0FF",symbol:"⏳",symbolColor:"#000000",spawnMsg:"Time fractures as Chronovexium emerges from the continuum...",exact:125000000000},
     Aetherion:{rarity:"Zenith",value:41,color:"#FFD700",symbol:"✶",symbolColor:"#000000",spawnMsg:"The heavens shimmer as Aetherion descends into existence...",exact:350000000000},
     Paradoxium:{rarity:"Eternal",value:42,color:"#6A00FF",symbol:"Ψ",symbolColor:"#FFFFFF",spawnMsg:"Reality twists into an impossible shape as Paradoxium manifests...",exact:1500000000000},
     GenesisFragment:{rarity:"Eternal",value:43,color:"#FFFFFF",symbol:"✦",symbolColor:"#000000",spawnMsg:"A spark of creation ignites as the Genesis Fragment forms...",exact:5000000000000},
-    BlueTheFR:{rarity:"Eternal",value:44,color:"#00FBFF",symbol:"Blue",symbolColor:"#FFFFFF",spawnMsg:"You meet the creator...",exact:10000000000000},
+    BlueTheFR:{rarity:"Eternal",value:44,color:"#00FBFF",symbol:"Blue",symbolColor:"#FFFFFF",spawnMsg:"You meet the creator...",exact:100000000000000, imgSrc: "Blue.png"},
     Nebulium:{rarity:"Transcendent", value:45, color:"#76ff03", symbol:"N", spawnMsg:"You hear a ringing!", exact:26000000},
     Stellarium:{rarity:"Transcendent", value:46, color:"#00bcd4", symbol:"St", spawnMsg:"You hear a ringing!", exact:28000000},
     Lunarium:{rarity:"Transcendent", value:47, color:"#ffeb3b", symbol:"L", spawnMsg:"You hear a ringing!", exact:30000000},
@@ -843,7 +859,7 @@ const oreData = {
     Voidessence:{rarity:"Otherworldly", value:58, color:"#6a1b9a", symbol:"Ve", exact:600000000, spawnMsg:"Voidessence warps the very fabric of existence!"},
     Cosmosite:{rarity:"Otherworldly", value:59, color:"#ff6867", symbol:"Co", exact:650000000, spawnMsg:"The cosmos quivers as Cosmosite forms!"},
     Singulite:{rarity:"Otherworldly", value:60, color:"#00ffff", symbol:"Si", exact:700000000, spawnMsg:"Singulite bends space and time around you!"},
-    ZergHunter:{rarity:"Unfathomable", value:61, color:"#FF1300", symbol:"ZH", exact:100000000, spawnMsg:"Survive… or become meat"},
+    ZergHunter:{rarity:"Unfathomable", value:61, color:"#FF1300", symbol:"ZH", exact:100000000, spawnMsg:"Survive… or become meat", imgSrc: "Zerghunter.png"},
     VoidShard:{rarity:"Mythical",value:62,color:"#00e5ff",symbol:"VS",exact:75000},
     FrostWraith:{rarity:"Exotic",value:63,color:"#00b0ff",symbol:"FW",spawnMsg:"A chill goes down your spine!",exact:750000},
     SoulGlacier:{rarity:"Exotic",value:64,color:"#9c27b0",symbol:"SG",spawnMsg:"A chill goes down your spine!",exact:2000000},
@@ -873,8 +889,25 @@ const oreData = {
 	EventideStar:{rarity:"Imaginary",value:88,color:"#0a0a0a",symbol:"EvS",spawnMsg:"A ripple of eternity whispers through the void as EventideStar appears!",exact:1200000000},
 	QuantumCore:{rarity: "Imaginary",value: 89,color: "#00ffcc",symbol: "CPU",spawnMsg: "Digital circuits hum as QuantumCore boots the system!",exact: 1300000000},
 	CosmoNova:{rarity:"Imaginary",value:90,color:"#141414",symbol:"CNV",spawnMsg:"Stars ignite and collapse in a cosmic dance around CosmoNova!",exact:1400000000},
-	
+	VoidEclipse:{rarity:"Imaginary",value:91,color:"#0d0d0d",symbol:"VE",spawnMsg:"Darkness stretches infinitely as VoidEclipse emerges from the void!",exact:1500000000},
+	Nucleonix:{rarity:"Zenith",value:92,color:"#00ff00",symbol:"NU",spawnMsg:"Radiation hums as Nucleonix pulses with atomic energy!",exact:60000000000},
+	Pyrocore:{rarity:"Zenith",value:93,color:"#ff4500",symbol:"PY",spawnMsg:"Flames swirl violently as Pyrocore erupts from the magma!",exact:500000000000}, 
+	Aqualith:{rarity:"Zenith",value:94,color:"#00bfff",symbol:"AQ",spawnMsg:"Ocean currents converge as Aqualith emerges from the deep!",exact:300000000000}, 
+	Circuitium:{rarity:"Zenith",value:95,color:"#cccccc",symbol:"CI",spawnMsg:"Digital sparks fly as Circuitium materializes from the grid!",exact:750000000000}, 
+	Divinitium:{rarity: "Eternal",value: 96,color: "#ffffff",symbol: "DV",spawnMsg: "A blinding radiance heralds the arrival of Divinitium!",exact: 7000000000000},
+	Atomarion:{rarity: "Unfathomable",value: 97,color: "#00ff66",symbol: "AT",spawnMsg: "A surge of atomic energy radiates as Atomarion manifests!",exact: 265000000},
+	Infernium:{rarity: "Unfathomable",value: 98,color: "#ff3300",symbol: "IF",spawnMsg: "Molten fury erupts from Infernium, scorching all nearby!",exact: 285000000},
+	Pyronis:{rarity: "Eternal",value: 99,color: "#ff6600",symbol: "PY",spawnMsg: "Flames twist violently as Pyronis bursts forth from molten rock!",exact: 4000000000000},
+	SPAFF:{rarity: "SPAFF",value: 100,color: "#ff9900",symbol: "SPAFF",spawnMsg: "Le SPAFF est la!!",exact: 100000000000000000,imgSrc: "SPAFF.png"},
 };
+const oreImages = {};
+for (let ore in oreData) {
+    if (oreData[ore].imgSrc) {
+        const img = new Image();
+        img.src = oreData[ore].imgSrc; // Path relative to your HTML/game folder
+        oreImages[ore] = img;
+    }
+}
 
 const rarityColors = {
     Exotic: "#ffeb3b",
@@ -887,10 +920,11 @@ const rarityColors = {
 	Divine: "#ff0000",
 	Zenith: "#DF03FC",
 	Eternal: "#00FBFF",
+	SPAFF: "#ff9900",
 };
 const rarityOrder = ["Common","Uncommon","Rare","Epic","Legendary","Legendary+",
                      "Mythic","Exotic","Divine","Exquisite","Transcendent","Enigmatic",
-                     "Unfathomable","Otherworldly","Imaginary","Zenith","Eternal"];
+                     "Unfathomable","Otherworldly","Imaginary","Zenith","Eternal","SPAFF"];
 
 // Pickaxes
 const pickaxeData = {
@@ -935,11 +969,32 @@ const artefactData = {
 	10:{desc:"Mines 80 blocks every 1s",cost:{Nebulium:1},interval:1000,blocks:80},
 };
 
-// Luck Artefacts
+// Luck Artefacts for levels 1–50
 const luckArtefactData = {};
-for(let lvl=1; lvl<=50; lvl++){
-    luckArtefactData[lvl] = {desc: `+${lvl*10}% luck for ores ≥ 1K`, cost:{Emerald: 10*lvl}};
+for (let lvl = 1; lvl <= 50; lvl++) {
+    luckArtefactData[lvl] = { 
+        desc: `+${lvl*10}% luck for ores ≥ 1K`, 
+        cost: { Emerald: 10*lvl } 
+    };
 }
+
+// Define extra luck levels past 50
+const extraLuckLevels = {
+    51: { desc: "+600% luck for ores ≥ 1K", cost: { SoulGlacier: 50 } },
+    52: { desc: "+750% luck for ores ≥ 1K", cost: { PetaPlus1: 60 } },
+    53: { desc: "+1000% luck for ores ≥ 1K", cost: { Astralite: 50, Vortexium: 10 } },
+    54: { desc: "+1500% luck for ores ≥ 1K", cost: { EclipseShard: 15 } },
+    55: { desc: "+2000% luck for ores ≥ 1K", cost: { AbyssGem: 20 } },
+    56: { desc: "+3000% luck for ores ≥ 1K", cost: { FrostShard: 3 } },
+    57: { desc: "+4000% luck for ores ≥ 1K", cost: { Voidessence: 2 } },
+    58: { desc: "+5000% luck for ores ≥ 1K", cost: { CosmicRelic: 2, Infinity: 1 } },
+    59: { desc: "+7500% luck for ores ≥ 1K", cost: { Aetherion: 1 } },
+    60: { desc: "+10000% luck for ores ≥ 1K", cost: { GenesisFragment: 1 } },
+};
+
+// Merge the extra levels into the main luckArtefactData
+Object.assign(luckArtefactData, extraLuckLevels);
+
 
 // Grid
 function generateGrid(){
@@ -953,24 +1008,32 @@ function generateGrid(){
     }
 }
 
-function draw(){
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    ctx.textAlign="center";
-    ctx.textBaseline="middle";
-    ctx.font="40px Arial";
-    for(let y=0;y<GRID;y++){
-        for(let x=0;x<GRID;x++){
-            let ore=grid[y][x];
-            let data = oreData[ore];
-            ctx.fillStyle = data.color;
-            ctx.fillRect(x*SIZE,y*SIZE,SIZE-2,SIZE-2);
-            if(data.symbol){
-                ctx.fillStyle = data.symbolColor || "#fff";
-                ctx.fillText(data.symbol,x*SIZE + SIZE/2, y*SIZE + SIZE/2);
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.font = "40px Arial";
+
+    for (let y = 0; y < GRID; y++) {
+        for (let x = 0; x < GRID; x++) {
+            let ore = grid[y][x];
+            const data = oreData[ore];
+
+            // If there’s an image for the ore, draw it
+            if (oreImages[ore]) {
+                ctx.drawImage(oreImages[ore], x * SIZE, y * SIZE, SIZE - 2, SIZE - 2);
+            } else {
+                ctx.fillStyle = data.color;
+                ctx.fillRect(x * SIZE, y * SIZE, SIZE - 2, SIZE - 2);
+                if (data.symbol) {
+                    ctx.fillStyle = data.symbolColor || "#fff";
+                    ctx.fillText(data.symbol, x * SIZE + SIZE / 2, y * SIZE + SIZE / 2);
+                }
             }
         }
     }
 }
+
 
 function randomOre() {
     const ores = Object.keys(oreData);
@@ -982,10 +1045,13 @@ function randomOre() {
         // Base chance = 1 / rarity
         let baseChance = 1 / data.exact;
 
-        // Logarithmic luck scaling
+        // Logarithmic luck scaling, capped at ~10x for level 60
         if (luckArtefactLevel > 0 && data.exact >= 1000) {
-            // This scales luck gently even at high levels
-            baseChance += baseChance * Math.log10(luckArtefactLevel + 1) * 0.05;
+            // scaleFactor goes from 1x → ~10x at max level
+            const maxLevel = 60;           // your max level
+            const maxMultiplier = 10;      // we want ~10x at level 60
+            const scaleFactor = 1 + (Math.log10(luckArtefactLevel + 1) / Math.log10(maxLevel + 1)) * (maxMultiplier - 1);
+            baseChance *= scaleFactor;
         }
 
         return baseChance;
@@ -1015,10 +1081,6 @@ function randomOre() {
     // Fallback just in case
     return "Stone";
 }
-
-
-
-
 
 
 function randomHighTierOre() {
@@ -1559,26 +1621,40 @@ const oreViewer = document.getElementById("oreViewer");
 const oreBlock = document.getElementById("oreBlock");
 const oreName = document.getElementById("oreName");
 const oreRarity = document.getElementById("oreRarity");
-const replaySpawn = document.getElementById("replaySpawn");
+
 let lastSpawnOre = null;
 
 function showOreViewer(ore) {
-    if (lastSpawnOre === ore && oreViewer.style.display === "block") {
-        oreViewer.style.display = "none"; // hide if same ore clicked
-        lastSpawnOre = null;
-        return;
-    }
-
     const data = oreData[ore];
     oreViewer.style.display = "block";
-    oreBlock.style.background = data.color;
-    oreBlock.innerText = data.symbol || "";
-    oreBlock.style.color = data.symbolColor || "#fff";
+
+    // Clear previous content
+    oreBlock.innerHTML = "";
+
+    // If ore has an image, show it
+    if (oreImages[ore]) {
+        const img = oreImages[ore].cloneNode(); // clone to allow multiple views
+        img.style.width = "100%";
+        img.style.height = "100%";
+        img.style.objectFit = "contain";
+        oreBlock.appendChild(img);
+    } else {
+        // Fallback: show symbol
+        oreBlock.innerText = data.symbol || "";
+        oreBlock.style.color = data.symbolColor || "#fff";
+        oreBlock.style.background = data.color;
+    }
 
     oreName.innerText = `${ore} (${data.rarity})`;
     oreRarity.innerText = `1 in ${formatNumber(data.exact)}`;
 
-    lastSpawnOre = ore; // store for replay
+    // Toggle hide if same ore clicked
+    if (lastSpawnOre === ore) {
+        oreViewer.style.display = "none";
+        lastSpawnOre = null;
+    } else {
+        lastSpawnOre = ore;
+    }
 }
 
 
