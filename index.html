@@ -551,7 +551,11 @@ const caveTypes = {
 
 
 function checkForCaveSpawn() {
-    if (activeCave || blocksMined < CAVE_INTERVAL) return;
+    if (activeCave) return; // cave already active
+
+    // Blocks mined since last cave ended
+    const blocksSinceLastCave = blocksMined - lastCaveEndAt;
+    if (blocksSinceLastCave < CAVE_INTERVAL) return;
 
     const caveKeys = Object.keys(caveTypes);
 
@@ -559,16 +563,16 @@ function checkForCaveSpawn() {
         const caveKey = caveKeys[i];
         const cave = caveTypes[caveKey];
 
-        // Each cave has a 1-in-(1/rareChance) chance to spawn
         if (Math.random() < cave.rareChance) {
             activeCave = cave;
-            activeCave.startTime = Date.now(); // optional: track start for 2-sec exclusive delay
+            activeCave.startTime = Date.now();
             caveEndAt = blocksMined + CAVE_DURATION;
             console.log(`A ${caveKey} has appeared!`);
-            return; // only one cave spawns at a time
+            return;
         }
     }
 }
+
 
 function updateCaveUI() {
     const box = document.getElementById("caveInfoBox");
@@ -625,6 +629,7 @@ function updateCaveUI() {
     // Automatically end cave when blocks reach zero
     if (blocksLeft <= 0) {
         activeCave = null;
+		lastCaveEndAt = blocksMined; 
         box.innerHTML = "No Cave Active";
         console.log("The cave has collapsed.");
     }
@@ -1453,25 +1458,29 @@ if (activeCave && activeCave.caveBlocks.includes(ore2)) {
     for (const ore of exclusiveOres) {
         if (Math.random() < 1 / oreData[ore].exact) {
             chosenOre = ore;
-            break; // stop after first successful roll
+            break;
         }
     }
 
-    if (chosenOre) {
-        inventory[chosenOre] = (inventory[chosenOre] || 0) + 1;
-        updateRecentFind(chosenOre, 1);
-
-        if (oreData[chosenOre].spawnMsg)
-            setTimeout(() => tryPlaySpawnSound(chosenOre), 50);
+    // Fallback: if no rare ore, pick a common cave block
+    if (!chosenOre) {
+        chosenOre = activeCave.caveBlocks[
+            Math.floor(Math.random() * activeCave.caveBlocks.length)
+        ];
     }
 
-    // Always replace the block with a normal cave block
+    // Give ore to inventory immediately
+    inventory[chosenOre] = (inventory[chosenOre] || 0) + 1;
+    updateRecentFind(chosenOre, 1);
+
+    // Replace the grid block with a normal cave block
     grid[ty][tx] = activeCave.caveBlocks[
         Math.floor(Math.random() * activeCave.caveBlocks.length)
     ];
 
     return; // skip normal ore logic
 }
+
 
 
 
