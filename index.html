@@ -388,6 +388,21 @@
         <button id="spawnToggle" onclick="toggleSpawn()">Spawn Messages: On</button>
     </div>
 </div>
+<div id="caveInfoBox" style="
+    margin-top: 8px;
+    margin-right: 100px;      
+    padding: 12px;          
+    border: 2px solid black;
+    background: #111;
+    color: white;
+    font-size: 16px;        
+    width: 200px;           
+    min-height: 50px;      
+">
+    No Cave Active
+</div>
+
+
 
 
     <div id="spawnEffect"></div>
@@ -424,6 +439,7 @@
             <h3>Inventory</h3>
         </div>
     </div>
+	
 
     <!-- Ore Viewer -->
     <div id="oreViewer">
@@ -482,6 +498,138 @@
 		let currentVolumeIndex = 0;
 		let spawnMessagesEnabled = true;
 		let spawnSoundFilter = "Exotic"; // default = hear all
+		let blocksMined = 0;
+		let activeCave = null;
+		let caveEndAt = 0;
+		const CAVE_INTERVAL = 1000000;   // 1M blocks
+		const CAVE_DURATION = 500000;     // lasts 50k blocks
+
+const caveTypes = {
+
+    NormalCave: {
+        caveBlocks: ["CaveStone", "CaveCoal", "CaveIron"],
+        exclusiveOres: ["EternalCrystal", "MythicObelisk"],
+        rareChance: 0.5 // 1 in 2
+    },
+
+    IceCave: {
+        caveBlocks: ["Ice"],
+        exclusiveOres: ["CrystalFrost"],
+        rareChance: 1/8
+    },
+
+    EnergyCave: {
+        caveBlocks: ["Energy"],
+        exclusiveOres: ["GlowingNova", "ZenithShard"],
+        rareChance: 1/12
+    },
+
+    NuclearCave: {
+        caveBlocks: ["NuclearWaste"],
+        exclusiveOres: ["RadiantCore"],
+        rareChance: 1/45
+    },
+
+    ShadowCave: {
+        caveBlocks: ["ShadowMatter"],
+        exclusiveOres: ["ShadowGem", "VoidOrb"],
+        rareChance: 1/66
+    },
+
+    AbyssCave: {
+        caveBlocks: ["AbyssSand"],
+        exclusiveOres: ["AbyssCrystal","AbyssFish"],
+        rareChance: 1/100
+    },
+
+    LavaCave: {
+        caveBlocks: ["LavaRock"],
+        exclusiveOres: ["LavaRelic"],
+        rareChance: 1/250
+    }
+};
+
+
+function checkForCaveSpawn() {
+    if (activeCave || blocksMined < CAVE_INTERVAL) return;
+
+    const caveKeys = Object.keys(caveTypes);
+
+    for (let i = 0; i < caveKeys.length; i++) {
+        const caveKey = caveKeys[i];
+        const cave = caveTypes[caveKey];
+
+        // Each cave has a 1-in-(1/rareChance) chance to spawn
+        if (Math.random() < cave.rareChance) {
+            activeCave = cave;
+            activeCave.startTime = Date.now(); // optional: track start for 2-sec exclusive delay
+            caveEndAt = blocksMined + CAVE_DURATION;
+            console.log(`A ${caveKey} has appeared!`);
+            return; // only one cave spawns at a time
+        }
+    }
+}
+
+function updateCaveUI() {
+    const box = document.getElementById("caveInfoBox");
+
+    if (!activeCave) {
+        box.innerHTML = "No Cave Active";
+        box.style.background = "#111";
+        return;
+    }
+
+    const blocksLeft = caveEndAt - blocksMined;
+
+    // Find cave name
+    const caveName = Object.keys(caveTypes).find(
+        key => caveTypes[key] === activeCave
+    );
+
+    // Format rare chance (ex: 1 in 8)
+    const chanceText = `1 in ${Math.round(1 / activeCave.rareChance)}`;
+
+    box.innerHTML = `
+        ${caveName} Active<br>
+        Exclusive Chance: ${chanceText}<br>
+        Blocks Left: ${blocksLeft}
+    `;
+
+    box.style.background = "#222";
+}
+function updateCaveUI() {
+    const box = document.getElementById("caveInfoBox");
+
+    if (!activeCave) {
+        box.innerHTML = "No Cave Active";
+        box.style.background = "#111";
+        return;
+    }
+
+    const blocksLeft = Math.max(caveEndAt - blocksMined, 0);
+
+    const caveName = Object.keys(caveTypes).find(
+        key => caveTypes[key] === activeCave
+    );
+
+    const chanceText = `1 in ${Math.round(1 / activeCave.rareChance)}`;
+
+    box.innerHTML = `
+        ${caveName} Active<br>
+        Exclusive Chance: ${chanceText}<br>
+        Blocks Left: ${blocksLeft.toLocaleString()}
+    `;
+
+    box.style.background = "#222";
+
+    // Automatically end cave when blocks reach zero
+    if (blocksLeft <= 0) {
+        activeCave = null;
+        box.innerHTML = "No Cave Active";
+        console.log("The cave has collapsed.");
+    }
+}
+
 
 		function toggleSpawn() {
     spawnMessagesEnabled = !spawnMessagesEnabled;
@@ -525,13 +673,12 @@
     });
 }
 	
-        function playSpawnSound(ore) {
-    if (!spawnMessagesEnabled) return; // <-- Skip everything if disabled
-
+       function playSpawnSound(ore) {
+    if (!spawnMessagesEnabled) return;
     if (spawnLock) return;
 
     const data = oreData[ore];
-    if (!data.spawnMsg) return;
+    if (!data || !data.spawnMsg) return;
 
     spawnLock = true;
 
@@ -539,18 +686,40 @@
     msgDiv.innerText = data.spawnMsg;
     msgDiv.style.color = rarityColors[data.rarity] || "#ffffff";
     msgDiv.style.display = "block";
-    let audioId = null;
-    const exact = data.exact;
 
-    if (exact >= 250000 && exact < 10000000) audioId = "Achillgoesdownyourspine";
-    else if (exact >= 10000000 && exact < 25000000) audioId = "Yourheartskipsabeat";
-    else if (exact >= 25000000 && exact < 60000000) audioId = "Transcendent";
-    else if (exact >= 60000000 && exact < 100000000) audioId = "Enigmatic";
-    else if (exact >= 100000000 && exact < 251000000) audioId = "Unfathomable";
-    else if (exact >= 251000000 && exact < 1000000000) audioId = "Otherworldly";
-    else if (exact >= 1000000000 && exact < 50000000000) audioId = "Imaginary";
-    else if (exact >= 50000000000 && exact < 1000000000000) audioId = "Zenith";
-    else if (exact >= 1000000000000) audioId = "Eternal";
+    let audioId = null;
+
+    // Special mapping for cave-exclusive and unique ores
+    const specialRaritySounds = {
+        "IceCaveExclusive-Exotic": "Achillgoesdownyourspine",
+        "EnergyCaveExclusive-Exquisite": "Yourheartskipsabeat",
+        "EnergyCaveExclusive-Zenith": "Zenith",
+        "NuclearCaveExclusive-Transcendent": "Transcendent",
+        "ShadowCaveExclusive-Enigmatic": "Enigmatic",
+        "ShadowCaveExclusive-Imaginary": "Imaginary",
+        "AbyssCaveExclusive-Unfathomable": "Unfathomable",
+        "AbyssCaveExclusive-Zenith": "Zenith",
+        "LavaCaveExclusive-Otherworldly": "Otherworldly",
+        "CaveExclusive-Mythical": "Otherworldly",
+        "CaveExclusive-Eternal": "Eternal"
+    };
+
+    // Use the special audio if it exists for this ore's rarity
+    if (specialRaritySounds[data.rarity]) {
+        audioId = specialRaritySounds[data.rarity];
+    } else {
+        // Otherwise, use the numeric "exact" ranges
+        const exact = data.exact;
+        if (exact >= 250000 && exact < 10000000) audioId = "Achillgoesdownyourspine";
+        else if (exact >= 10000000 && exact < 25000000) audioId = "Yourheartskipsabeat";
+        else if (exact >= 25000000 && exact < 60000000) audioId = "Transcendent";
+        else if (exact >= 60000000 && exact < 100000000) audioId = "Enigmatic";
+        else if (exact >= 100000000 && exact < 251000000) audioId = "Unfathomable";
+        else if (exact >= 251000000 && exact < 1000000000) audioId = "Otherworldly";
+        else if (exact >= 1000000000 && exact < 50000000000) audioId = "Imaginary";
+        else if (exact >= 50000000000 && exact < 1000000000000) audioId = "Zenith";
+        else if (exact >= 1000000000000) audioId = "Eternal";
+    }
 
     function unlock() {
         msgDiv.style.display = "none";
@@ -563,6 +732,8 @@
     }
 
     const audio = document.getElementById(audioId);
+    if (!audio) { setTimeout(unlock, 5000); return; }
+
     audio.pause();
     audio.currentTime = 0;
 
@@ -571,10 +742,8 @@
         /* =========================
            🔥 ETERNAL EFFECT
         ========================== */
-        if (data.rarity === "Eternal" || data.rarity === "SPAFF")  {
-
+        if (data.rarity === "Eternal" || data.rarity === "SPAFF"|| data.rarity === "CaveExclusive-Eternal") {
             const overlay = document.getElementById("spawnEffect");
-
             overlay.style.transition = "background 0s linear";
             overlay.style.background = "transparent";
 
@@ -593,15 +762,13 @@
                 overlay.style.background = "transparent";
                 unlock();
             };
-
             return;
         }
 
         /* =========================
            🌌 ZENITH EFFECT
         ========================== */
-        if (data.rarity === "Zenith") {
-
+        if (data.rarity === "Zenith"|| data.rarity === "AbyssCaveExclusive-Zenith"|| data.rarity === "EnergyCaveExclusive-Zenith") {
             const numDivs = 5;
             const spawnDivs = [];
 
@@ -614,7 +781,6 @@
 
             for (let i = 0; i < numDivs; i++) {
                 let x, y, attempts = 0;
-
                 do {
                     x = Math.random() * (window.innerWidth - 200) + 50;
                     y = Math.random() * (window.innerHeight - 200) + 50;
@@ -649,62 +815,55 @@
                 spawnDivs.forEach(d => d.div.remove());
                 unlock();
             };
-
             return;
         }
-		/* =========================
-   🌠 IMAGINARY EFFECT (OVER CANVAS)
-========================= */
-if (data.rarity === "Imaginary") {
-    const canvas = document.getElementById("game");
 
-    const block = document.createElement("div");
-    block.style.position = "absolute";
-    block.style.top = canvas.offsetTop + canvas.height / 2 + "px";
-    block.style.left = canvas.offsetLeft + canvas.width / 2 + "px";
-    block.style.transform = "translate(-50%, -50%) scale(1.5)";
-    block.style.width = "180px";
-    block.style.height = "180px";
-    block.style.display = "flex";
-    block.style.alignItems = "center";
-    block.style.justifyContent = "center";
-    block.style.borderRadius = "20px";
-    block.style.zIndex = "10000";
-    block.style.pointerEvents = "none";
-    block.style.animation = "imaginaryPulseAnim 1.5s infinite ease-in-out";
-    block.style.background = "transparent"; // let image show through
+        /* =========================
+           🌠 IMAGINARY EFFECT
+        ========================== */
+        if (data.rarity === "Imaginary"|| data.rarity === "ShadowCaveExclusive-Imaginary") {
+            const canvas = document.getElementById("game");
+            const block = document.createElement("div");
 
-    // Check if there's a preloaded image for this ore
-    const img = oreImages[ore];
-    if (img) {
-        img.style.width = "100%";
-        img.style.height = "100%";
-        img.style.objectFit = "contain"; // keeps aspect ratio
-        block.appendChild(img.cloneNode()); // use a clone to avoid removing from oreImages
-    } else {
-        // fallback to colored block + symbol
-        block.style.background = data.color;
-        const span = document.createElement("span");
-        span.innerText = data.symbol || "";
-        span.style.fontSize = "70px";
-        span.style.fontWeight = "bold";
-        span.style.color = data.symbolColor || "#fff";
-        block.appendChild(span);
-    }
+            block.style.position = "absolute";
+            block.style.top = canvas.offsetTop + canvas.height / 2 + "px";
+            block.style.left = canvas.offsetLeft + canvas.width / 2 + "px";
+            block.style.transform = "translate(-50%, -50%) scale(1.5)";
+            block.style.width = "180px";
+            block.style.height = "180px";
+            block.style.display = "flex";
+            block.style.alignItems = "center";
+            block.style.justifyContent = "center";
+            block.style.borderRadius = "20px";
+            block.style.zIndex = "10000";
+            block.style.pointerEvents = "none";
+            block.style.animation = "imaginaryPulseAnim 1.5s infinite ease-in-out";
+            block.style.background = "transparent";
 
-    document.body.appendChild(block);
+            const img = oreImages[ore];
+            if (img) {
+                img.style.width = "100%";
+                img.style.height = "100%";
+                img.style.objectFit = "contain";
+                block.appendChild(img.cloneNode());
+            } else {
+                block.style.background = data.color;
+                const span = document.createElement("span");
+                span.innerText = data.symbol || "";
+                span.style.fontSize = "70px";
+                span.style.fontWeight = "bold";
+                span.style.color = data.symbolColor || "#fff";
+                block.appendChild(span);
+            }
 
-    audio.onended = () => {
-        block.remove();
-        unlock();
-    };
+            document.body.appendChild(block);
 
-    return;
-}
-
-
-
-
+            audio.onended = () => {
+                block.remove();
+                unlock();
+            };
+            return;
+        }
 
         /* =========================
            NORMAL RARITIES
@@ -715,6 +874,7 @@ if (data.rarity === "Imaginary") {
         setTimeout(unlock, 5000);
     });
 }
+
 
 function updateRecentFind(ore) {
     const data = oreData[ore];
@@ -899,6 +1059,26 @@ const oreData = {
 	Infernium:{rarity: "Unfathomable",value: 98,color: "#ff3300",symbol: "IF",spawnMsg: "Molten fury erupts from Infernium, scorching all nearby!",exact: 285000000},
 	Pyronis:{rarity: "Eternal",value: 99,color: "#ff6600",symbol: "PY",spawnMsg: "Flames twist violently as Pyronis bursts forth from molten rock!",exact: 4000000000000},
 	SPAFF:{rarity: "SPAFF",value: 100,color: "#ff9900",symbol: "SPAFF",spawnMsg: "Le SPAFF est la!!",exact: 100000000000000000,imgSrc: "SPAFF.png"},
+	CrystalFrost:{rarity:"IceCaveExclusive-Exotic",value:101,color:"#00ffff",symbol:"CF",spawnMsg:"A shard of CrystalFrost glimmers in the icy cave!",exact:500000},
+	Ice: {rarity: "IceCaveExclusive",value: 0,color: "#88eeff",symbol: "", exact: 1},
+	GlowingNova:{rarity:"EnergyCaveExclusive-Exquisite",value:102,color:"#ff00ff",symbol:"GN",spawnMsg:"GlowingNova illuminates the cavern with a soft pulse!",exact:1000000},
+	ZenithShard:{rarity:"EnergyCaveExclusive-Zenith",value:103,color:"#DF03FC",symbol:"ZS",spawnMsg:"ZenithShard glows with impossible energy!",exact:60000000},
+	Energy: {rarity: "EnergyCaveExclusive",value: 0,color: "#A327F5",symbol: "", exact: 1},
+	RadiantCore:{rarity:"NuclearCaveExclusive-Transcendent",value:104,color:"#ffd700",symbol:"RC",spawnMsg:"RadiantCore radiates blinding light across the cave!",exact:3000000},
+	NuclearWaste: {rarity: "NuclearCaveExclusive",value: 0,color: "#46F527",symbol: "", exact: 1},
+	ShadowGem:{rarity:"ShadowCaveExclusive-Enigmatic",value:105,color:"#4b0082",symbol:"SG",spawnMsg:"ShadowGem distorts the shadows in the cavern!",exact:5000000},
+	VoidOrb:{rarity:"ShadowCaveExclusive-Imaginary",value:106,color:"#000000",symbol:"VO",spawnMsg:"VoidOrb bends reality in the cavern!",exact:45000000},
+	ShadowMatter: {rarity: "ShadowCaveExclusive",value: 0,color: "#313831",symbol: "", exact: 1},
+	AbyssCrystal:{rarity:"AbyssCaveExclusive-Unfathomable",value:107,color:"#0d47a1",symbol:"AC",spawnMsg:"AbyssCrystal pulses with a bottomless energy!",exact:20000000},
+	AbyssFish:{rarity:"AbyssCaveExclusive-Zenith",value:108,color:"#003fa3",symbol:"Fish",spawnMsg:"Fish!",exact:69019008, imgSrc: "fish.gif"},
+	AbyssSand: {rarity: "AbyssCaveExclusive",value: 0,color: "#0B0E61",symbol: "", exact: 1},
+	LavaRelic:{rarity:"LavaCaveExclusive-Otherworldly",value:108,color:"#ff4500",symbol:"LR",spawnMsg:"LavaRelic radiates heat as it emerges from molten rock!",exact:38000000},
+	LavaRock: {rarity: "LavaCaveExclusive",value: 0,color: "#66584A",symbol: "", exact: 1},
+	EternalCrystal:{rarity:"CaveExclusive-Eternal",value:110,color:"#00FBFF",symbol:"EC",spawnMsg:"EternalCrystal shines like the heart of creation!",exact:100000000},
+	MythicObelisk:{rarity:"CaveExclusive-Mythical",value:111,color:"#ff5722",symbol:"MO",spawnMsg:"MythicObelisk towers impossibly, defying gravity!",exact:25000000},
+	CaveStone:{rarity:"CaveExclusiveCommon",value:0,color:"#777",exact:3},
+    CaveCoal:{rarity:"CaveExclusiveCommon",value:0,color:"#444",exact:10},
+    CaveIron:{rarity:"CaveExclusiveUncommon",value:0,color:"#aaa",exact:20},
 };
 const oreImages = {};
 for (let ore in oreData) {
@@ -910,6 +1090,16 @@ for (let ore in oreData) {
 }
 
 const rarityColors = {
+    "IceCaveExclusive-Exotic": "#ffeb3b",
+    "EnergyCaveExclusive-Exquisite": "#00ff00",
+    "EnergyCaveExclusive-Zenith": "#DF03FC",
+    "NuclearCaveExclusive-Transcendent": "#2196f3",
+    "ShadowCaveExclusive-Enigmatic": "#fff176",
+    "ShadowCaveExclusive-Imaginary": "#ffffe0",
+    "AbyssCaveExclusive-Unfathomable": "#0d47a1",
+    "AbyssCaveExclusive-Zenith": "#DF03FC",
+    "CaveExclusive-Mythical": "#DF03FC",
+    "CaveExclusive-Eternal": "#00FBFF",
     Exotic: "#ffeb3b",
     Exquisite: "#00ff00",
     Transcendent: "#2196f3",
@@ -917,11 +1107,12 @@ const rarityColors = {
     Unfathomable: "#0d47a1",
     Otherworldly: "#8b0000",
     Imaginary: "#ffffe0",
-	Divine: "#ff0000",
-	Zenith: "#DF03FC",
-	Eternal: "#00FBFF",
-	SPAFF: "#ff9900",
+    Divine: "#ff0000",
+    Zenith: "#DF03FC",
+    Eternal: "#00FBFF",
+    SPAFF: "#ff9900"
 };
+
 const rarityOrder = ["Common","Uncommon","Rare","Epic","Legendary","Legendary+",
                      "Mythic","Exotic","Divine","Exquisite","Transcendent","Enigmatic",
                      "Unfathomable","Otherworldly","Imaginary","Zenith","Eternal","SPAFF"];
@@ -1036,51 +1227,91 @@ function draw() {
 
 
 function randomOre() {
-    const ores = Object.keys(oreData);
+    // =========================
+    // CAVE GENERATION (NO LUCK)
+    // =========================
+    if (activeCave) {
+        // End cave if limit reached
+        if (blocksMined >= caveEndAt) {
+            activeCave = null;
+            updateCaveUI();
+            console.log("The cave has collapsed.");
+            return "Stone";
+        }
 
-    // Calculate weights for each ore
+        // Track cave start time for 2-second delay
+        if (!activeCave.startTime) activeCave.startTime = Date.now();
+        const elapsed = (Date.now() - activeCave.startTime) / 1000;
+
+        // Only allow exclusive ores after 2 seconds
+        if (elapsed >= 2) {
+            let chosenOre = null;
+
+            // Roll each exclusive ore independently using its exact 1-in-N chance
+            for (const ore of activeCave.exclusiveOres) {
+                if (Math.random() < 1 / oreData[ore].exact) {
+                    chosenOre = ore;
+                    break; // stop after first successful roll
+                }
+            }
+
+            // If an exclusive ore was rolled, return it
+            if (chosenOre) {
+                // Optional: play spawn message
+                if (oreData[chosenOre].spawnMsg) {
+                    setTimeout(() => tryPlaySpawnSound(chosenOre), 50);
+                }
+                return chosenOre;
+            }
+        }
+
+        // Fallback: return a normal cave block if no ore rolled
+        const blocks = activeCave.caveBlocks;
+        return blocks[Math.floor(Math.random() * blocks.length)];
+    }
+
+    // =========================
+    // NORMAL WORLD (WITH LUCK)
+    // Cave-exclusive ores are excluded
+    // =========================
+    const ores = Object.keys(oreData).filter(ore => !oreData[ore].rarity.includes("CaveExclusive"));
+
+    // Calculate weighted chance including luck
     const weights = ores.map(ore => {
         const data = oreData[ore];
-
-        // Base chance = 1 / rarity
         let baseChance = 1 / data.exact;
 
-        // Logarithmic luck scaling, capped at ~10x for level 60
         if (luckArtefactLevel > 0 && data.exact >= 1000) {
-            // scaleFactor goes from 1x → ~10x at max level
-            const maxLevel = 60;           // your max level
-            const maxMultiplier = 10;      // we want ~10x at level 60
-            const scaleFactor = 1 + (Math.log10(luckArtefactLevel + 1) / Math.log10(maxLevel + 1)) * (maxMultiplier - 1);
+            const maxLevel = 60;
+            const maxMultiplier = 10;
+            const scaleFactor =
+                1 + (Math.log10(luckArtefactLevel + 1) / Math.log10(maxLevel + 1)) * (maxMultiplier - 1);
             baseChance *= scaleFactor;
         }
 
         return baseChance;
     });
 
-    // Sum all weights
+    // Randomly pick based on weights
     const totalWeight = weights.reduce((sum, w) => sum + w, 0);
-
-    // Pick a random number between 0 and totalWeight
     let random = Math.random() * totalWeight;
 
-    // Determine which ore corresponds to the random number
     for (let i = 0; i < ores.length; i++) {
         random -= weights[i];
         if (random <= 0) {
             const selectedOre = ores[i];
 
-            // Play spawn sound for very rare ores
-            if (oreData[selectedOre].exact >= 250000 && oreData[selectedOre].spawnMsg) {
+            // Optional: play spawn sound for ultra-rare ores
+            if (oreData[selectedOre].exact >= 250000 && oreData[selectedOre].spawnMsg)
                 setTimeout(() => tryPlaySpawnSound(selectedOre), 50);
-            }
 
             return selectedOre;
         }
     }
 
-    // Fallback just in case
-    return "Stone";
+    return "Stone"; // fallback
 }
+
 
 
 function randomHighTierOre() {
@@ -1121,12 +1352,10 @@ let lastT6Upgrade = 0; // global variable to track T6 30s cooldown
 let t9MinedCounter = 0;
 let t10MinedCounter = 0;
 
-function mineBlocks(x, y, manual=false) {
+function mineBlocks(x, y, manual = false) {
     if (spawnLock) return;
     if (!grid[y] || !grid[y][x]) return;
 
-    let ore = grid[y][x];
-    let data = oreData[ore];
     let targets = [[x, y]];
 
     let explosionChance = 0, tripleChance = 0, doubleChance = 0, luckMultiplier = 1;
@@ -1212,7 +1441,46 @@ function mineBlocks(x, y, manual=false) {
         let data2 = oreData[ore2];
         let count = 1;
 
-        // T9 mining counter
+        // Increment mined blocks & check cave spawn
+        blocksMined++;
+        checkForCaveSpawn();
+
+if (activeCave && activeCave.caveBlocks.includes(ore2)) {
+    const exclusiveOres = activeCave.exclusiveOres;
+    let chosenOre = null;
+
+    // Try each exclusive ore independently
+    for (const ore of exclusiveOres) {
+        if (Math.random() < 1 / oreData[ore].exact) {
+            chosenOre = ore;
+            break; // stop after first successful roll
+        }
+    }
+
+    if (chosenOre) {
+        inventory[chosenOre] = (inventory[chosenOre] || 0) + 1;
+        updateRecentFind(chosenOre, 1);
+
+        if (oreData[chosenOre].spawnMsg)
+            setTimeout(() => tryPlaySpawnSound(chosenOre), 50);
+    }
+
+    // Always replace the block with a normal cave block
+    grid[ty][tx] = activeCave.caveBlocks[
+        Math.floor(Math.random() * activeCave.caveBlocks.length)
+    ];
+
+    return; // skip normal ore logic
+}
+
+
+
+
+
+        /* =========================
+           NORMAL WORLD ORES: apply luck, duplication, upgrades
+        ========================== */
+        // T9 passive counter
         if (equippedPickaxe === "T9") {
             t9MinedCounter++;
             if (t9MinedCounter >= 5000000) {
@@ -1229,7 +1497,7 @@ function mineBlocks(x, y, manual=false) {
             }
         }
 
-        // T10 counter for Unfathomable
+        // T10 passive counter
         if (equippedPickaxe === "T10") {
             t10MinedCounter++;
             if (t10MinedCounter >= 4000000) {
@@ -1246,49 +1514,50 @@ function mineBlocks(x, y, manual=false) {
             }
         }
 
-        // Duplication chances
-        if (equippedGears.includes("T2") && Math.random()<0.05) count++;
-        if (equippedGears.includes("T3") && Math.random()<0.25) count*=2;
-        if (Math.random() < tripleChance) count *=3;
-        else if (Math.random() < doubleChance) count *=2;
+        // Duplication and triple/double chances
+        if (equippedGears.includes("T2") && Math.random() < 0.05) count++;
+        if (equippedGears.includes("T3") && Math.random() < 0.25) count *= 2;
+        if (Math.random() < tripleChance) count *= 3;
+        else if (Math.random() < doubleChance) count *= 2;
 
-        // --- Inline Upgrade Logic (T6/T9/T10) ---
-        if (equippedGears.includes("T6") && Math.random()<0.05) {
+        // Inline upgrades for normal ores
+        if (equippedGears.includes("T6") && Math.random() < 0.05) {
             const idx = rarityOrder.indexOf(data2.rarity);
-            if (idx>=0 && idx < rarityOrder.length-1) {
-                const next = rarityOrder[idx+1];
+            if (idx >= 0 && idx < rarityOrder.length - 1) {
+                const next = rarityOrder[idx + 1];
                 const candidates = Object.keys(oreData).filter(o => oreData[o].rarity === next);
-                if (candidates.length>0) ore2 = candidates[Math.floor(Math.random()*candidates.length)];
+                if (candidates.length > 0) ore2 = candidates[Math.floor(Math.random()*candidates.length)];
             }
         }
 
-        if (!t9UpgradeApplied && equippedGears.includes("T9") && Math.random()<0.2) {
+        if (!t9UpgradeApplied && equippedGears.includes("T9") && Math.random() < 0.2) {
             const idx = rarityOrder.indexOf(data2.rarity);
-            if (idx>=0 && idx < rarityOrder.length-1) {
-                const next = rarityOrder[idx+1];
+            if (idx >= 0 && idx < rarityOrder.length - 1) {
+                const next = rarityOrder[idx + 1];
                 const candidates = Object.keys(oreData).filter(o => oreData[o].rarity === next);
-                if (candidates.length>0) ore2 = candidates[Math.floor(Math.random()*candidates.length)];
+                if (candidates.length > 0) ore2 = candidates[Math.floor(Math.random()*candidates.length)];
             }
             t9UpgradeApplied = true;
         }
 
         if (equippedGears.includes("T10") && data2.exact >= 50000000) {
-            if (Math.random()<0.5) {
+            if (Math.random() < 0.5) {
                 const idx = rarityOrder.indexOf(data2.rarity);
-                if (idx>=0 && idx < rarityOrder.length-1) {
-                    const next = rarityOrder[idx+1];
+                if (idx >= 0 && idx < rarityOrder.length - 1) {
+                    const next = rarityOrder[idx + 1];
                     const candidates = Object.keys(oreData).filter(o => oreData[o].rarity === next);
-                    if (candidates.length>0) ore2 = candidates[Math.floor(Math.random()*candidates.length)];
+                    if (candidates.length > 0) ore2 = candidates[Math.floor(Math.random()*candidates.length)];
                     console.log("T10 Gear: 50M+ Ore Upgraded!");
                 }
             }
-            if (Math.random()<0.5) grid[ty][tx] = ore2;
+            if (Math.random() < 0.5) grid[ty][tx] = ore2;
             else grid[ty][tx] = randomOre();
         } else {
             grid[ty][tx] = randomOre();
         }
 
-        inventory[ore2] = (inventory[ore2]||0) + count;
+        // Add normal ore to inventory
+        inventory[ore2] = (inventory[ore2] || 0) + count;
         updateRecentFind(ore2, count);
     });
 
@@ -1296,6 +1565,8 @@ function mineBlocks(x, y, manual=false) {
     updateUI();
     draw();
 }
+
+
 
 	function updateCounters() {
     totalBlocksMined = 0;
@@ -1701,6 +1972,7 @@ function loadGame() {
         pauseOnChill = data.pauseOnChill || false;
         waitingForManualHighOre = data.waitingForManualHighOre || false;
         currentVolumeIndex = data.currentVolumeIndex ?? 0;
+		setInterval(updateCaveUI, 1000); // updates once per second
 
     } else {
         inventory = {};
