@@ -376,7 +376,6 @@
     <!-- First row -->
     <div class="button-row">
         <button onclick="saveGame()">Save</button>
-        <button onclick="resetGame()">Reset</button>
         <button id="sortToggle" onclick="toggleSort()">Sort: Common → Rarest</button>
         <button id="compactToggle" onclick="toggleCompact()">Compact: Off</button>
     </div>
@@ -1988,10 +1987,6 @@ function loadGame() {
         inventory = {};
         currentVolumeIndex = 0;
     }
-}
-function resetGame() { 
-    localStorage.removeItem("MiningRNGSimulator"); 
-    location.reload(); 
 }
 loadGame();
 document.querySelectorAll("audio").forEach(a => {
