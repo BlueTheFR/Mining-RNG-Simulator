@@ -1420,15 +1420,10 @@ function draw() {
 }
 
 
-function getValidOres(ores) {
-    return ores.filter(ore => {
-        const event = oreData[ore].event;
-        return !event || event === currentEvent;
-    });
-}
-
 function randomOre() {
+    // ===== Cave World =====
     if (activeCave) {
+        // Check if cave ended
         if (blocksMined >= caveEndAt) {
             activeCave = null;
             updateCaveUI();
@@ -1439,8 +1434,8 @@ function randomOre() {
         if (!activeCave.startTime) activeCave.startTime = Date.now();
         const elapsed = (Date.now() - activeCave.startTime) / 1000;
 
-        // Filter exclusive ores by event
-        const validExclusiveOres = getValidOres(activeCave.exclusiveOres);
+        // Exclusive ores (filtered by current event)
+        const validExclusiveOres = getValidOres(activeCave.exclusiveOres, currentEvent);
 
         if (elapsed >= 2 && validExclusiveOres.length > 0) {
             for (const ore of validExclusiveOres) {
@@ -1451,7 +1446,8 @@ function randomOre() {
             }
         }
 
-        const validCaveBlocks = getValidOres(activeCave.caveBlocks);
+        // Cave blocks (filtered by current event)
+        const validCaveBlocks = getValidOres(activeCave.caveBlocks, currentEvent);
         if (validCaveBlocks.length > 0) {
             return validCaveBlocks[Math.floor(Math.random() * validCaveBlocks.length)];
         }
@@ -1460,19 +1456,19 @@ function randomOre() {
     }
 
     // ===== Normal World =====
-    let allOres = Object.keys(oreData).filter(
-        ore => !oreData[ore].rarity.includes("CaveExclusive")
-    );
+const allOres = Object.keys(oreData).filter(
+    ore => !oreData[ore].rarity.includes("CaveExclusive")
+);
 
-    const availableOres = getValidOres(allOres);
+const availableOres = getValidOres(allOres, currentEvent); // ONLY current event
 
-    if (!availableOres.length) return "Stone";
-
-    // Weighted random (luck included)
+if (!availableOres.length) return "Stone";
+    // Weighted random with luck (only for normal world)
     const weights = availableOres.map(ore => {
         const data = oreData[ore];
         let baseChance = 1 / data.exact;
 
+        // Apply luck only to very rare ores
         if (luckArtefactLevel > 0 && data.exact >= 1000) {
             const maxLevel = 60;
             const maxMultiplier = 10;
@@ -1491,14 +1487,24 @@ function randomOre() {
         random -= weights[i];
         if (random <= 0) {
             const selectedOre = availableOres[i];
+
             if (oreData[selectedOre].exact >= 250000 && oreData[selectedOre].spawnMsg) {
                 setTimeout(() => tryPlaySpawnSound(selectedOre), 50);
             }
+
             return selectedOre;
         }
     }
 
-    return "Stone";
+    return "Stone"; // fallback
+}
+
+function getValidOres(ores, event) {
+    return ores.filter(ore => {
+        const oreEvent = oreData[ore].event;
+        if (!oreEvent) return true;       // normal ore
+        return oreEvent === event;        // only current event
+    });
 }
 function randomHighTierOre() {
     const ores = Object.keys(oreData).filter(o => oreData[o].exact >= 50000);
