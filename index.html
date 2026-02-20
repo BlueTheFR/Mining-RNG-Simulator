@@ -32,6 +32,21 @@
             width: 1280px;
             margin-top: 10px;
         }
+		.event-box {
+    position: fixed;
+    top: 150px;         
+    left: 100px;
+    padding: 8px 18px;
+    background: rgba(0,0,0,0.85);
+    color: white;
+    font-weight: bold;
+    border: 2px solid white;
+    border-radius: 8px;
+    font-size: 20px;
+    text-align: center;
+    width: fit-content;
+    z-index: 999;
+}
 
         #pickaxeUI, #gearUI, #artefactUI, #luckArtefactUI {
             width: 320px;
@@ -228,6 +243,51 @@
         margin-top: 4px;
         box-sizing: border-box;
     }
+	
+	.event-text {
+    font-weight: bold;
+    -webkit-text-stroke: 1px white;
+}
+
+/* 🌌 Space = White */
+.event-space {
+    color: white;
+}
+
+/* 🌊 Ocean = Blue */
+.event-ocean {
+    color: #00bfff;
+}
+
+/* ☢ Nuclear = Green */
+.event-nuclear {
+    color: #39ff14;
+}
+
+/* 🔥 Fire = Orange */
+.event-fire {
+    color: #ff6600;
+}
+.event-computer {
+    color: #61665f;
+}
+
+
+/* 🧬 Evolie = Rainbow */
+.event-evolie {
+    background: linear-gradient(
+        90deg,
+        red,
+        orange,
+        yellow,
+        green,
+        blue,
+        indigo,
+        violet
+    );
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
 		/* =========================
    📱 MOBILE FIX (NO PC CHANGES)
    ========================= */
@@ -414,7 +474,7 @@
         <h3>Recent Finds</h3>
         <div id="recentFindContent"></div>
     </div>
-
+	<div id="eventBox" class="event-box">No event active</div>
     <!-- Main UI panels -->
     <div id="ui">
         <div id="pickaxeUI"><h3>Pickaxes</h3></div>
@@ -503,6 +563,60 @@
 		let lastCaveEndAt = 0;
 		const CAVE_INTERVAL = 100000;   // 100k blocks
 		const CAVE_DURATION = 25000;     // lasts 25k blocks
+		let currentEvent = null;
+
+const events = ["space", "ocean", "nuclear", "fire", "evolie", "computer"];
+
+function startEventSystem() {
+    const eventBox = document.getElementById("eventBox");
+
+    // Initially no event
+    eventBox.innerText = "No event active";
+
+    // Start event rotation almost immediately
+    setTimeout(() => {
+        rotateEvent(); // first event
+
+        setInterval(() => {
+            rotateEvent(); // rotate every 5 minutes
+        }, 300000); // 300000ms = 5min
+    }, 60000);
+}
+
+function rotateEvent() {
+    let newEvent;
+    do {
+        newEvent = events[Math.floor(Math.random() * events.length)];
+    } while (newEvent === currentEvent);
+
+    currentEvent = newEvent;
+
+    const eventBox = document.getElementById("eventBox");
+
+    const displayNames = {
+        space: "Strange distortions ripple overhead",
+        ocean: "A distant tide can be felt",
+        nuclear: "The air vibrates faintly",
+        fire: "The temperature rises unnaturally",
+        evolie: "Something is evolving",
+        computer: "The system behaves… differently"
+    };
+
+    // Reset class first
+    eventBox.className = "event-box event-text";
+
+    // Add event-specific color class
+    switch (currentEvent) {
+        case "space": eventBox.classList.add("event-space"); break;
+        case "ocean": eventBox.classList.add("event-ocean"); break;
+        case "nuclear": eventBox.classList.add("event-nuclear"); break;
+        case "fire": eventBox.classList.add("event-fire"); break;
+        case "evolie": eventBox.classList.add("event-evolie"); break;
+        case "computer": eventBox.classList.add("event-computer"); break;
+    }
+
+    eventBox.innerText = displayNames[currentEvent];
+}
 
 const caveTypes = {
 
@@ -689,6 +803,7 @@ function updateCaveUI() {
 
     const msgDiv = document.getElementById("spawnMessage");
     msgDiv.innerText = data.spawnMsg;
+	msgDiv.classList.remove("event-text");
     msgDiv.style.color = rarityColors[data.rarity] || "#ffffff";
     msgDiv.style.display = "block";
 
@@ -719,8 +834,8 @@ function updateCaveUI() {
         else if (exact >= 10000000 && exact < 25000000) audioId = "Yourheartskipsabeat";
         else if (exact >= 25000000 && exact < 60000000) audioId = "Transcendent";
         else if (exact >= 60000000 && exact < 100000000) audioId = "Enigmatic";
-        else if (exact >= 100000000 && exact < 251000000) audioId = "Unfathomable";
-        else if (exact >= 251000000 && exact < 1000000000) audioId = "Otherworldly";
+        else if (exact >= 100000000 && exact < 295000000) audioId = "Unfathomable";
+        else if (exact >= 295000000 && exact < 1000000000) audioId = "Otherworldly";
         else if (exact >= 1000000000 && exact < 50000000000) audioId = "Imaginary";
         else if (exact >= 50000000000 && exact < 1000000000000) audioId = "Zenith";
         else if (exact >= 1000000000000) audioId = "Eternal";
@@ -869,6 +984,25 @@ function updateCaveUI() {
             };
             return;
         }
+// ==========================
+// EVENT TEXT ADDITION
+// ==========================
+const eventData = getEventText(); // Should return currentEvent + display text
+
+if (
+    eventData &&
+    data.event === currentEvent &&  // <-- make it event-locked
+    data.rarity !== "Eternal" &&
+    data.rarity !== "SPAFF" &&
+    data.exact >= 250000
+) {
+    const eventLine = document.createElement("div");
+    eventLine.innerText = eventData.text;
+    eventLine.classList.add("event-text", eventData.class);
+
+    msgDiv.appendChild(document.createElement("br"));
+    msgDiv.appendChild(eventLine);
+}
 
         /* =========================
            NORMAL RARITIES
@@ -1084,6 +1218,60 @@ const oreData = {
 	CaveStone:{rarity:"CaveExclusiveCommon",value:0,color:"#777",exact:3},
     CaveCoal:{rarity:"CaveExclusiveCommon",value:0,color:"#444",exact:10},
     CaveIron:{rarity:"CaveExclusiveUncommon",value:0,color:"#aaa",exact:20},
+	Starflare:{rarity:"Exotic",value:112,color:"#ffd700",symbol:"SF",spawnMsg:"A distant star erupts as Starflare descends from the cosmos!",exact:750000, event: "space"},
+	Galaxium:{rarity:"Exquisite",value:113,color:"#9c27ff",symbol:"GX",spawnMsg:"Galaxium spirals into existence, bending light itself!",exact:15000000},
+	NebulonPrime:{rarity:"Transcendent",value:114,color:"#00e5ff",symbol:"NP",spawnMsg:"A celestial hum echoes as NebulonPrime forms from stellar dust!",exact:42000000, event: "space"},
+	EventHorizonShard:{rarity:"Enigmatic",value:115,color:"#1a1a1a",symbol:"EH",spawnMsg:"Space distorts violently around the EventHorizonShard!",exact:88000000, event: "space"},
+	SingularityCore:{rarity:"Unfathomable",value:116,color:"#000000",symbol:"SC",spawnMsg:"Gravity collapses inward as SingularityCore manifests!",exact:210000000, event: "space"},
+	AstralOblivion:{rarity:"Otherworldly",value:117,color:"#311b92",symbol:"AO",spawnMsg:"The void trembles as AstralOblivion tears through reality!",exact:600000000, event: "space"},
+	CosmicParallax:{rarity:"Imaginary",value:118,color:"#111111",symbol:"CP",spawnMsg:"Dimensions overlap as CosmicParallax fractures perception!",exact:1700000000, event: "space"},
+	HypernovaX:{rarity:"Zenith",value:119,color:"#ff1744",symbol:"HX",spawnMsg:"A supernova detonates across time as HypernovaX is born!",exact:80000000000, event: "space"},
+	VoidGenesis:{rarity:"Eternal",value:120,color:"#ffffff",symbol:"VG",spawnMsg:"Creation and annihilation intertwine as VoidGenesis awakens!",exact:8000000000000, event: "space"},
+	TidalShard:{rarity:"Exotic",value:121,color:"#00bfff",symbol:"TS",spawnMsg:"Tides surge violently as TidalShard rises from the abyss!",exact:800000, event: "ocean"},
+	AbyssPearl:{rarity:"Exquisite",value:122,color:"#66ccff",symbol:"AP",spawnMsg:"A deep resonance echoes as AbyssPearl surfaces from the depths!",exact:16000000, event: "ocean"},
+	MaelstromCore:{rarity:"Transcendent",value:123,color:"#0077be",symbol:"MC",spawnMsg:"A vortex spirals wildly as MaelstromCore forms!",exact:43000000, event: "ocean"},
+	LeviathanScale:{rarity:"Enigmatic",value:124,color:"#003366",symbol:"LS",spawnMsg:"Ancient waters churn as LeviathanScale emerges!",exact:92000000, event: "ocean"},
+	OceanicRift:{rarity:"Unfathomable",value:125,color:"#002244",symbol:"OR",spawnMsg:"The seabed splits apart revealing OceanicRift!",exact:225000000, event: "ocean"},
+	AbyssalCataclysm:{rarity:"Otherworldly",value:126,color:"#001133",symbol:"AC",spawnMsg:"The ocean roars as AbyssalCataclysm awakens!",exact:650000000, event: "ocean"},
+	DeepSeaMirage:{rarity:"Imaginary",value:127,color:"#0d0d1a",symbol:"DM",spawnMsg:"Reality ripples beneath crushing pressure as DeepSeaMirage appears!",exact:1800000000, event: "ocean"},
+	TsunamiPrime:{rarity:"Zenith",value:128,color:"#0099ff",symbol:"TP",spawnMsg:"A towering wave of power crashes forth as TsunamiPrime manifests!",exact:90000000000, event: "ocean"},
+	EternalTide:{rarity:"Eternal",value:129,color:"#00ffff",symbol:"ET",spawnMsg:"The oceans pause as EternalTide commands the abyss!",exact:9000000000000, event: "ocean"},
+	CinderSpark:{rarity:"Exotic",value:130,color:"#ff6600",symbol:"CS",spawnMsg:"A sudden burst of heat ignites as CinderSpark flares!",exact:820000, event: "fire"},
+	Blazite:{rarity:"Exquisite",value:131,color:"#ff3300",symbol:"BZ",spawnMsg:"Flames roar fiercely as Blazite crystallizes!",exact:16500000,event: "fire"},
+	InfernoShard:{rarity:"Transcendent",value:132,color:"#ff0000",symbol:"IS",spawnMsg:"Molten fury solidifies into InfernoShard!",exact:45000000, event: "fire"},
+	HellfireCore:{rarity:"Enigmatic",value:133,color:"#8b0000",symbol:"HC",spawnMsg:"The ground fractures as HellfireCore erupts!",exact:98000000, event: "fire"},
+	MoltenOblivion:{rarity:"Unfathomable",value:134,color:"#990000",symbol:"MO",spawnMsg:"Volcanic rage manifests as MoltenOblivion!",exact:240000000, event: "fire"},
+	PhoenixEmber:{rarity:"Otherworldly",value:135,color:"#ff1744",symbol:"PE",spawnMsg:"A blazing phoenix cry echoes as PhoenixEmber ignites!",exact:700000000, event: "fire"},
+	PyroMirage:{rarity:"Imaginary",value:136,color:"#1a0000",symbol:"PM",spawnMsg:"Flames distort reality itself as PyroMirage flickers!",exact:1900000000, event: "fire"},
+	SolarInfernum:{rarity:"Zenith",value:137,color:"#ff5722",symbol:"SI",spawnMsg:"The sun flares violently as SolarInfernum descends!",exact:95000000000, event: "fire"},
+	EternalInfernis:{rarity:"Eternal",value:138,color:"#ffcc00",symbol:"EI",spawnMsg:"An eternal flame consumes time as EternalInfernis awakens!",exact:9500000000000, event: "fire"},
+	Bitcrystal:{rarity:"Exotic",value:139,color:"#00ffcc",symbol:"BC",spawnMsg:"Digital fragments assemble as Bitcrystal compiles!",exact:850000, event: "computer"},
+	DataCore:{rarity:"Exquisite",value:140,color:"#33ccff",symbol:"DC",spawnMsg:"System signals spike as DataCore initializes!",exact:17000000, event: "computer"},
+	GlitchShard:{rarity:"Transcendent",value:141,color:"#00ffff",symbol:"GS",spawnMsg:"Reality flickers as GlitchShard corrupts the grid!",exact:47000000, event: "computer"},
+	FirewallRelic:{rarity:"Enigmatic",value:142,color:"#ff0033",symbol:"FR",spawnMsg:"A digital barrier surges as FirewallRelic activates!",exact:99000000, event: "computer"},
+	QuantumKernel:{rarity:"Unfathomable",value:143,color:"#00ff66",symbol:"QK",spawnMsg:"Processing beyond comprehension begins as QuantumKernel boots!",exact:260000000, event: "computer"},
+	NeuralOverdrive:{rarity:"Otherworldly",value:144,color:"#0033ff",symbol:"NO",spawnMsg:"AI consciousness spikes as NeuralOverdrive evolves!",exact:720000000, event: "computer"},
+	SimulatedVoid:{rarity:"Imaginary",value:145,color:"#000000",symbol:"SV",spawnMsg:"The simulation fractures revealing SimulatedVoid!",exact:2000000000, event: "computer"},
+	OmegaProtocol:{rarity:"Zenith",value:146,color:"#cccccc",symbol:"OP",spawnMsg:"System override complete. OmegaProtocol engaged.",exact:100000000000, event: "computer"},
+	EternalAlgorithm:{rarity:"Eternal",value:147,color:"#ffffff",symbol:"EA",spawnMsg:"The final equation resolves as EternalAlgorithm executes infinitely!",exact:10000000000000, event: "computer"},
+	Radionite:{rarity:"Exotic",value:148,color:"#7fff00",symbol:"RN",spawnMsg:"A faint radioactive glow intensifies as Radionite stabilizes!",exact:900000, event: "nuclear"},
+	Uranex:{rarity:"Exquisite",value:149,color:"#66ff33",symbol:"UX",spawnMsg:"Energy pulses violently as Uranex begins to decay!",exact:18000000, event: "nuclear"},
+	PlutonShard:{rarity:"Transcendent",value:150,color:"#33cc33",symbol:"PS",spawnMsg:"Unstable atoms collide as PlutonShard crystallizes!",exact:50000000, event: "nuclear"},
+	ReactorCoreX:{rarity:"Enigmatic",value:151,color:"#228b22",symbol:"RC",spawnMsg:"Containment fails momentarily as ReactorCoreX materializes!",exact:110000000, event: "nuclear"},
+	AtomicCataclysm:{rarity:"Unfathomable",value:152,color:"#00aa00",symbol:"AC",spawnMsg:"A chain reaction surges as AtomicCataclysm forms!",exact:280000000, event: "nuclear"},
+	FusionOblivion:{rarity:"Otherworldly",value:153,color:"#00ff00",symbol:"FO",spawnMsg:"Fusion ignites beyond control as FusionOblivion emerges!",exact:800000000, event: "nuclear"},
+	GammaSingularity:{rarity:"Imaginary",value:154,color:"#003300",symbol:"GS",spawnMsg:"Gamma radiation distorts space as GammaSingularity appears!",exact:2200000000, event: "nuclear"},
+	MeltdownPrime:{rarity:"Zenith",value:155,color:"#adff2f",symbol:"MP",spawnMsg:"A catastrophic surge erupts as MeltdownPrime destabilizes reality!",exact:120000000000, event: "nuclear"},
+	EternalFission:{rarity:"Eternal",value:156,color:"#ccff00",symbol:"EF",spawnMsg:"Infinite fission fractures existence as EternalFission awakens!",exact:11000000000000, event: "nuclear"},
+	Evolite:{rarity:"Exotic",value:157,color:"#cfa26b",symbol:"EV",spawnMsg:"A soft evolutionary aura surrounds Evolite!",exact:950000, event: "evolie"},
+	Vaporeore:{rarity:"Exquisite",value:158,color:"#3399ff",symbol:"VP",spawnMsg:"Water ripples outward as Vaporeore flows into form!",exact:19000000, event: "evolie"},
+	Jolteonite:{rarity:"Transcendent",value:159,color:"#ffff33",symbol:"JL",spawnMsg:"Electric sparks scatter as Jolteonite discharges violently!",exact:52000000, event: "evolie"},
+	Flareonyx:{rarity:"Enigmatic",value:160,color:"#ff6600",symbol:"FL",spawnMsg:"Flames spiral upward as Flareonyx ignites the air!",exact:115000000, event: "evolie"},
+	Espeorite:{rarity:"Unfathomable",value:161,color:"#cc66ff",symbol:"ES",spawnMsg:"Psychic waves distort perception as Espeorite materializes!",exact:300000000, event: "evolie"},
+	Umbreonite:{rarity:"Otherworldly",value:162,color:"#111133",symbol:"UM",spawnMsg:"Shadows gather silently as Umbreonite reveals itself!",exact:850000000, event: "evolie"},
+	Leafeostone:{rarity:"Imaginary",value:163,color:"#66cc66",symbol:"LF",spawnMsg:"Nature's energy blossoms as Leafeostone grows instantly!",exact:2400000000, event: "evolie"},
+	Glaceorite:{rarity:"Zenith",value:164,color:"#99ffff",symbol:"GL",spawnMsg:"Absolute zero descends as Glaceorite freezes time itself!",exact:130000000000, event: "evolie"},
+	EternalEvolux:{rarity:"Eternal",value:165,color:"#ffffff",symbol:"EX",spawnMsg:"All evolutionary paths converge as EternalEvolux transcends existence!",exact:12000000000000, event: "evolie"},
 };
 const oreImages = {};
 for (let ore in oreData) {
@@ -1236,7 +1424,6 @@ function randomOre() {
     // CAVE GENERATION (NO LUCK)
     // =========================
     if (activeCave) {
-        // End cave if limit reached
         if (blocksMined >= caveEndAt) {
             activeCave = null;
             updateCaveUI();
@@ -1244,25 +1431,20 @@ function randomOre() {
             return "Stone";
         }
 
-        // Track cave start time for 2-second delay
         if (!activeCave.startTime) activeCave.startTime = Date.now();
         const elapsed = (Date.now() - activeCave.startTime) / 1000;
 
-        // Only allow exclusive ores after 2 seconds
         if (elapsed >= 2) {
             let chosenOre = null;
 
-            // Roll each exclusive ore independently using its exact 1-in-N chance
             for (const ore of activeCave.exclusiveOres) {
                 if (Math.random() < 1 / oreData[ore].exact) {
                     chosenOre = ore;
-                    break; // stop after first successful roll
+                    break;
                 }
             }
 
-            // If an exclusive ore was rolled, return it
             if (chosenOre) {
-                // Optional: play spawn message
                 if (oreData[chosenOre].spawnMsg) {
                     setTimeout(() => tryPlaySpawnSound(chosenOre), 50);
                 }
@@ -1270,19 +1452,28 @@ function randomOre() {
             }
         }
 
-        // Fallback: return a normal cave block if no ore rolled
         const blocks = activeCave.caveBlocks;
         return blocks[Math.floor(Math.random() * blocks.length)];
     }
 
     // =========================
-    // NORMAL WORLD (WITH LUCK)
-    // Cave-exclusive ores are excluded
+    // NORMAL WORLD (WITH LUCK + EVENT LOCK FOR EVENT ORES ONLY)
     // =========================
-    const ores = Object.keys(oreData).filter(ore => !oreData[ore].rarity.includes("CaveExclusive"));
+    let allOres = Object.keys(oreData).filter(
+        ore => !oreData[ore].rarity.includes("CaveExclusive")
+    );
+
+    // Filter event ores: only ores that match currentEvent
+    let availableOres = allOres.filter(ore => {
+        // Normal ores (no event field) are always allowed
+        if (!oreData[ore].event) return true;
+
+        // Event ores: only allow if they match the current event
+        return currentEvent && oreData[ore].event === currentEvent;
+    });
 
     // Calculate weighted chance including luck
-    const weights = ores.map(ore => {
+    const weights = availableOres.map(ore => {
         const data = oreData[ore];
         let baseChance = 1 / data.exact;
 
@@ -1297,16 +1488,14 @@ function randomOre() {
         return baseChance;
     });
 
-    // Randomly pick based on weights
     const totalWeight = weights.reduce((sum, w) => sum + w, 0);
     let random = Math.random() * totalWeight;
 
-    for (let i = 0; i < ores.length; i++) {
+    for (let i = 0; i < availableOres.length; i++) {
         random -= weights[i];
         if (random <= 0) {
-            const selectedOre = ores[i];
+            const selectedOre = availableOres[i];
 
-            // Optional: play spawn sound for ultra-rare ores
             if (oreData[selectedOre].exact >= 250000 && oreData[selectedOre].spawnMsg)
                 setTimeout(() => tryPlaySpawnSound(selectedOre), 50);
 
@@ -1999,7 +2188,7 @@ startArtefact();
 setInterval(() => {
     saveGame(false); // false = do NOT show alert
 }, 300000); // 300000ms = 5 minutes
-
+startEventSystem();
 </script>
 </body>
 </html>
