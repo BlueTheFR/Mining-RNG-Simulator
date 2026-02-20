@@ -39,7 +39,8 @@
     padding: 8px 18px;
     background: rgba(0,0,0,0.85);
     color: white;
-    font-weight: bold;
+	font-family: Arial, sans-serif 
+	font-weight: normal; /* or 100 for very thin */
     border: 2px solid white;
     border-radius: 8px;
     font-size: 20px;
@@ -251,7 +252,7 @@
 
 /* 🌌 Space = White */
 .event-space {
-    color: white;
+    color: black;
 }
 
 /* 🌊 Ocean = Blue */
@@ -1419,10 +1420,14 @@ function draw() {
 }
 
 
+function getValidOres(ores) {
+    return ores.filter(ore => {
+        const event = oreData[ore].event;
+        return !event || event === currentEvent;
+    });
+}
+
 function randomOre() {
-    // =========================
-    // CAVE GENERATION (NO LUCK)
-    // =========================
     if (activeCave) {
         if (blocksMined >= caveEndAt) {
             activeCave = null;
@@ -1434,45 +1439,36 @@ function randomOre() {
         if (!activeCave.startTime) activeCave.startTime = Date.now();
         const elapsed = (Date.now() - activeCave.startTime) / 1000;
 
-        if (elapsed >= 2) {
-            let chosenOre = null;
+        // Filter exclusive ores by event
+        const validExclusiveOres = getValidOres(activeCave.exclusiveOres);
 
-            for (const ore of activeCave.exclusiveOres) {
+        if (elapsed >= 2 && validExclusiveOres.length > 0) {
+            for (const ore of validExclusiveOres) {
                 if (Math.random() < 1 / oreData[ore].exact) {
-                    chosenOre = ore;
-                    break;
+                    if (oreData[ore].spawnMsg) setTimeout(() => tryPlaySpawnSound(ore), 50);
+                    return ore;
                 }
-            }
-
-            if (chosenOre) {
-                if (oreData[chosenOre].spawnMsg) {
-                    setTimeout(() => tryPlaySpawnSound(chosenOre), 50);
-                }
-                return chosenOre;
             }
         }
 
-        const blocks = activeCave.caveBlocks;
-        return blocks[Math.floor(Math.random() * blocks.length)];
+        const validCaveBlocks = getValidOres(activeCave.caveBlocks);
+        if (validCaveBlocks.length > 0) {
+            return validCaveBlocks[Math.floor(Math.random() * validCaveBlocks.length)];
+        }
+
+        return "Stone";
     }
 
-    // =========================
-    // NORMAL WORLD (WITH LUCK + EVENT LOCK FOR EVENT ORES ONLY)
-    // =========================
+    // ===== Normal World =====
     let allOres = Object.keys(oreData).filter(
         ore => !oreData[ore].rarity.includes("CaveExclusive")
     );
 
-    // Filter event ores: only ores that match currentEvent
-    let availableOres = allOres.filter(ore => {
-        // Normal ores (no event field) are always allowed
-        if (!oreData[ore].event) return true;
+    const availableOres = getValidOres(allOres);
 
-        // Event ores: only allow if they match the current event
-        return currentEvent && oreData[ore].event === currentEvent;
-    });
+    if (!availableOres.length) return "Stone";
 
-    // Calculate weighted chance including luck
+    // Weighted random (luck included)
     const weights = availableOres.map(ore => {
         const data = oreData[ore];
         let baseChance = 1 / data.exact;
@@ -1495,19 +1491,15 @@ function randomOre() {
         random -= weights[i];
         if (random <= 0) {
             const selectedOre = availableOres[i];
-
-            if (oreData[selectedOre].exact >= 250000 && oreData[selectedOre].spawnMsg)
+            if (oreData[selectedOre].exact >= 250000 && oreData[selectedOre].spawnMsg) {
                 setTimeout(() => tryPlaySpawnSound(selectedOre), 50);
-
+            }
             return selectedOre;
         }
     }
 
-    return "Stone"; // fallback
+    return "Stone";
 }
-
-
-
 function randomHighTierOre() {
     const ores = Object.keys(oreData).filter(o => oreData[o].exact >= 50000);
 
