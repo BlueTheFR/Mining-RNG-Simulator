@@ -565,7 +565,6 @@
 		const CAVE_INTERVAL = 100000;   // 100k blocks
 		const CAVE_DURATION = 25000;     // lasts 25k blocks
 		let currentEvent = null;
-
 const events = ["space", "ocean", "nuclear", "fire", "evolie", "computer"];
 
 function startEventSystem() {
@@ -1506,6 +1505,19 @@ function getValidOres(ores, event) {
         return oreEvent === event;        // only current event
     });
 }
+function getEventSafeOres() {
+    return Object.keys(oreData).filter(o => {
+        const data = oreData[o];
+
+        // Block cave exclusives
+        if (data.rarity && data.rarity.includes("CaveExclusive")) return false;
+
+        // Block other events
+        if (data.event && data.event !== currentEvent) return false;
+
+        return true;
+    });
+}
 function randomHighTierOre() {
     const ores = Object.keys(oreData).filter(o => oreData[o].exact >= 50000);
 
@@ -1721,7 +1733,7 @@ if (activeCave && activeCave.caveBlocks.includes(ore2)) {
             const idx = rarityOrder.indexOf(data2.rarity);
             if (idx >= 0 && idx < rarityOrder.length - 1) {
                 const next = rarityOrder[idx + 1];
-                const candidates = Object.keys(oreData).filter(o => oreData[o].rarity === next);
+                const candidates = getEventSafeOres().filter(o => oreData[o].rarity === next);
                 if (candidates.length > 0) ore2 = candidates[Math.floor(Math.random()*candidates.length)];
             }
         }
@@ -1730,7 +1742,7 @@ if (activeCave && activeCave.caveBlocks.includes(ore2)) {
             const idx = rarityOrder.indexOf(data2.rarity);
             if (idx >= 0 && idx < rarityOrder.length - 1) {
                 const next = rarityOrder[idx + 1];
-                const candidates = Object.keys(oreData).filter(o => oreData[o].rarity === next);
+                const candidates = getEventSafeOres().filter(o => oreData[o].rarity === next);
                 if (candidates.length > 0) ore2 = candidates[Math.floor(Math.random()*candidates.length)];
             }
             t9UpgradeApplied = true;
@@ -1741,8 +1753,8 @@ if (activeCave && activeCave.caveBlocks.includes(ore2)) {
                 const idx = rarityOrder.indexOf(data2.rarity);
                 if (idx >= 0 && idx < rarityOrder.length - 1) {
                     const next = rarityOrder[idx + 1];
-                    const candidates = Object.keys(oreData).filter(o => oreData[o].rarity === next);
-                    if (candidates.length > 0) ore2 = candidates[Math.floor(Math.random()*candidates.length)];
+					const candidates = getEventSafeOres().filter(o => oreData[o].rarity === next);                   
+					if (candidates.length > 0) ore2 = candidates[Math.floor(Math.random()*candidates.length)];
                     console.log("T10 Gear: 50M+ Ore Upgraded!");
                 }
             }
@@ -1852,23 +1864,50 @@ function spendCost(cost) {
     indexDiv.innerHTML = `<h3>Ore Index (${discoveredOres} / ${allOres.length})</h3>`;
 
     allOres
-        .sort((a, b) => sortRarestFirst ? oreData[b].exact - oreData[a].exact : oreData[a].exact - oreData[b].exact)
-        .forEach(ore => {
-            const r = oreData[ore];
-            const owned = (inventory[ore] || 0) > 0; // ✅ fixed
+    .sort((a, b) => sortRarestFirst 
+        ? oreData[b].exact - oreData[a].exact 
+        : oreData[a].exact - oreData[b].exact
+    )
+    .forEach(ore => {
 
-            const div = document.createElement("div");
-            div.style.color = owned ? "lime" : "red"; // green if owned, red if not
-            div.style.fontSize = "13px";
-            div.style.padding = "2px 4px";
-            div.style.marginBottom = "1px";
-            div.style.cursor = "pointer";
+        const r = oreData[ore];
+        const owned = (inventory[ore] || 0) > 0;
 
-            div.innerHTML = `${ore} (${r.rarity}) - 1 in ${formatNumber(r.exact)}`;
-            indexDiv.appendChild(div);
-        });
+        const div = document.createElement("div");
+        div.style.color = owned ? "lime" : "red";
+        div.style.fontSize = "13px";
+        div.style.padding = "2px 4px";
+        div.style.marginBottom = "1px";
+        div.style.cursor = "pointer";
+
+       let eventTag = "";
+
+if (r.event) {
+    const eventColors = {
+        space: "#9c27ff",
+        ocean: "#00bfff",
+        fire: "#ff5722",
+        computer: "#00ffcc",
+        nuclear: "#7fff00",
+        evolie: "#cfa26b"
+    };
+
+    eventTag = `
+        <span style="
+            color:${eventColors[r.event] || "#ffffff"};
+            font-weight:bold;
+            margin-left:6px;
+        ">
+            [${r.event.toUpperCase()}]
+        </span>
+    `;
 }
 
+div.innerHTML = `${ore} (${r.rarity}) - 1 in ${formatNumber(r.exact)}${eventTag}`;
+
+        indexDiv.appendChild(div);
+    });
+}
 
 // PICKAXE BUTTON
 function createPickaxeButton(name, desc, cost) {
