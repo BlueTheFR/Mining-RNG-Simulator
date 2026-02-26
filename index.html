@@ -272,7 +272,23 @@
 .event-computer {
     color: #61665f;
 }
+.event-mlp {
+    color: #ff66cc;
+}
+.event-terraria {
+    font-size: 24px;
+    font-weight: bold;
 
+    background: linear-gradient(
+        90deg,
+        purple 0%, purple 33%, 
+        green 33%, green 66%, 
+        red 66%, red 100%
+    );
+
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
 
 /* 🧬 Evolie = Rainbow */
 .event-evolie {
@@ -565,7 +581,7 @@
 		const CAVE_INTERVAL = 100000;   // 100k blocks
 		const CAVE_DURATION = 25000;     // lasts 25k blocks
 		let currentEvent = null;
-const events = ["space", "ocean", "nuclear", "fire", "evolie", "computer"];
+const events = ["space", "ocean", "nuclear", "fire", "evolie", "computer", "mlp", "terraria"];
 
 function startEventSystem() {
     const eventBox = document.getElementById("eventBox");
@@ -599,7 +615,9 @@ function rotateEvent() {
         nuclear: "The air vibrates faintly",
         fire: "The temperature rises unnaturally",
         evolie: "Something is evolving",
-        computer: "The system behaves… differently"
+        computer: "The system behaves… differently",
+		mlp: "Something magical gallops through the air",
+		terraria: "The world shifts into a harder state"
     };
 
     // Reset class first
@@ -613,6 +631,8 @@ function rotateEvent() {
         case "fire": eventBox.classList.add("event-fire"); break;
         case "evolie": eventBox.classList.add("event-evolie"); break;
         case "computer": eventBox.classList.add("event-computer"); break;
+		case "mlp": eventBox.classList.add("event-mlp"); break;
+		case "terraria": eventBox.classList.add("event-terraria"); break;
     }
 
     eventBox.innerText = displayNames[currentEvent];
@@ -1199,80 +1219,98 @@ const oreData = {
 	Pyronis:{rarity: "Eternal",value: 99,color: "#ff6600",symbol: "PY",spawnMsg: "Flames twist violently as Pyronis bursts forth from molten rock!",exact: 4000000000000},
 	SPAFF:{rarity: "SPAFF",value: 100,color: "#ff9900",symbol: "SPAFF",spawnMsg: "Le SPAFF est la!!",exact: 100000000000000000,imgSrc: "SPAFF.png"},
 	CrystalFrost:{rarity:"IceCaveExclusive-Exotic",value:101,color:"#00ffff",symbol:"CF",spawnMsg:"A shard of CrystalFrost glimmers in the icy cave!",exact:500000},
-	Ice: {rarity: "IceCaveExclusive",value: 0,color: "#88eeff",symbol: "", exact: 1},
-	GlowingNova:{rarity:"EnergyCaveExclusive-Exquisite",value:102,color:"#ff00ff",symbol:"GN",spawnMsg:"GlowingNova illuminates the cavern with a soft pulse!",exact:1000000},
-	ZenithShard:{rarity:"EnergyCaveExclusive-Zenith",value:103,color:"#DF03FC",symbol:"ZS",spawnMsg:"ZenithShard glows with impossible energy!",exact:60000000},
-	Energy: {rarity: "EnergyCaveExclusive",value: 0,color: "#A327F5",symbol: "", exact: 1},
-	RadiantCore:{rarity:"NuclearCaveExclusive-Transcendent",value:104,color:"#ffd700",symbol:"RC",spawnMsg:"RadiantCore radiates blinding light across the cave!",exact:3000000},
-	NuclearWaste: {rarity: "NuclearCaveExclusive",value: 0,color: "#46F527",symbol: "", exact: 1},
-	ShadowGem:{rarity:"ShadowCaveExclusive-Enigmatic",value:105,color:"#4b0082",symbol:"SG",spawnMsg:"ShadowGem distorts the shadows in the cavern!",exact:5000000},
-	VoidOrb:{rarity:"ShadowCaveExclusive-Imaginary",value:106,color:"#000000",symbol:"VO",spawnMsg:"VoidOrb bends reality in the cavern!",exact:45000000},
-	ShadowMatter: {rarity: "ShadowCaveExclusive",value: 0,color: "#313831",symbol: "", exact: 1},
-	AbyssCrystal:{rarity:"AbyssCaveExclusive-Unfathomable",value:107,color:"#0d47a1",symbol:"AC",spawnMsg:"AbyssCrystal pulses with a bottomless energy!",exact:20000000},
-	AbyssFish:{rarity:"AbyssCaveExclusive-Zenith",value:108,color:"#003fa3",symbol:"Fish",spawnMsg:"Fish!",exact:69019008, imgSrc: "fish.gif"},
-	AbyssSand: {rarity: "AbyssCaveExclusive",value: 0,color: "#0B0E61",symbol: "", exact: 1},
-	LavaRelic:{rarity:"LavaCaveExclusive-Otherworldly",value:108,color:"#ff4500",symbol:"LR",spawnMsg:"LavaRelic radiates heat as it emerges from molten rock!",exact:38000000},
-	LavaRock: {rarity: "LavaCaveExclusive",value: 0,color: "#66584A",symbol: "", exact: 1},
-	EternalCrystal:{rarity:"CaveExclusive-Eternal",value:110,color:"#00FBFF",symbol:"EC",spawnMsg:"EternalCrystal shines like the heart of creation!",exact:100000000},
-	MythicObelisk:{rarity:"CaveExclusive-Mythical",value:111,color:"#ff5722",symbol:"MO",spawnMsg:"MythicObelisk towers impossibly, defying gravity!",exact:25000000},
-	CaveStone:{rarity:"CaveExclusiveCommon",value:0,color:"#777",exact:3},
-    CaveCoal:{rarity:"CaveExclusiveCommon",value:0,color:"#444",exact:10},
-    CaveIron:{rarity:"CaveExclusiveUncommon",value:0,color:"#aaa",exact:20},
-	Starflare:{rarity:"Exotic",value:112,color:"#ffd700",symbol:"SF",spawnMsg:"A distant star erupts as Starflare descends from the cosmos!",exact:750000, event: "space"},
-	Galaxium:{rarity:"Exquisite",value:113,color:"#9c27ff",symbol:"GX",spawnMsg:"Galaxium spirals into existence, bending light itself!",exact:15000000},
-	NebulonPrime:{rarity:"Transcendent",value:114,color:"#00e5ff",symbol:"NP",spawnMsg:"A celestial hum echoes as NebulonPrime forms from stellar dust!",exact:42000000, event: "space"},
-	EventHorizonShard:{rarity:"Enigmatic",value:115,color:"#1a1a1a",symbol:"EH",spawnMsg:"Space distorts violently around the EventHorizonShard!",exact:88000000, event: "space"},
-	SingularityCore:{rarity:"Unfathomable",value:116,color:"#000000",symbol:"SC",spawnMsg:"Gravity collapses inward as SingularityCore manifests!",exact:210000000, event: "space"},
-	AstralOblivion:{rarity:"Otherworldly",value:117,color:"#311b92",symbol:"AO",spawnMsg:"The void trembles as AstralOblivion tears through reality!",exact:600000000, event: "space"},
-	CosmicParallax:{rarity:"Imaginary",value:118,color:"#111111",symbol:"CP",spawnMsg:"Dimensions overlap as CosmicParallax fractures perception!",exact:1700000000, event: "space"},
-	HypernovaX:{rarity:"Zenith",value:119,color:"#ff1744",symbol:"HX",spawnMsg:"A supernova detonates across time as HypernovaX is born!",exact:80000000000, event: "space"},
-	VoidGenesis:{rarity:"Eternal",value:120,color:"#ffffff",symbol:"VG",spawnMsg:"Creation and annihilation intertwine as VoidGenesis awakens!",exact:8000000000000, event: "space"},
-	TidalShard:{rarity:"Exotic",value:121,color:"#00bfff",symbol:"TS",spawnMsg:"Tides surge violently as TidalShard rises from the abyss!",exact:800000, event: "ocean"},
-	AbyssPearl:{rarity:"Exquisite",value:122,color:"#66ccff",symbol:"AP",spawnMsg:"A deep resonance echoes as AbyssPearl surfaces from the depths!",exact:16000000, event: "ocean"},
-	MaelstromCore:{rarity:"Transcendent",value:123,color:"#0077be",symbol:"MC",spawnMsg:"A vortex spirals wildly as MaelstromCore forms!",exact:43000000, event: "ocean"},
-	LeviathanScale:{rarity:"Enigmatic",value:124,color:"#003366",symbol:"LS",spawnMsg:"Ancient waters churn as LeviathanScale emerges!",exact:92000000, event: "ocean"},
-	OceanicRift:{rarity:"Unfathomable",value:125,color:"#002244",symbol:"OR",spawnMsg:"The seabed splits apart revealing OceanicRift!",exact:225000000, event: "ocean"},
-	AbyssalCataclysm:{rarity:"Otherworldly",value:126,color:"#001133",symbol:"AC",spawnMsg:"The ocean roars as AbyssalCataclysm awakens!",exact:650000000, event: "ocean"},
-	DeepSeaMirage:{rarity:"Imaginary",value:127,color:"#0d0d1a",symbol:"DM",spawnMsg:"Reality ripples beneath crushing pressure as DeepSeaMirage appears!",exact:1800000000, event: "ocean"},
-	TsunamiPrime:{rarity:"Zenith",value:128,color:"#0099ff",symbol:"TP",spawnMsg:"A towering wave of power crashes forth as TsunamiPrime manifests!",exact:90000000000, event: "ocean"},
-	EternalTide:{rarity:"Eternal",value:129,color:"#00ffff",symbol:"ET",spawnMsg:"The oceans pause as EternalTide commands the abyss!",exact:9000000000000, event: "ocean"},
-	CinderSpark:{rarity:"Exotic",value:130,color:"#ff6600",symbol:"CS",spawnMsg:"A sudden burst of heat ignites as CinderSpark flares!",exact:820000, event: "fire"},
-	Blazite:{rarity:"Exquisite",value:131,color:"#ff3300",symbol:"BZ",spawnMsg:"Flames roar fiercely as Blazite crystallizes!",exact:16500000,event: "fire"},
-	InfernoShard:{rarity:"Transcendent",value:132,color:"#ff0000",symbol:"IS",spawnMsg:"Molten fury solidifies into InfernoShard!",exact:45000000, event: "fire"},
-	HellfireCore:{rarity:"Enigmatic",value:133,color:"#8b0000",symbol:"HC",spawnMsg:"The ground fractures as HellfireCore erupts!",exact:98000000, event: "fire"},
-	MoltenOblivion:{rarity:"Unfathomable",value:134,color:"#990000",symbol:"MO",spawnMsg:"Volcanic rage manifests as MoltenOblivion!",exact:240000000, event: "fire"},
-	PhoenixEmber:{rarity:"Otherworldly",value:135,color:"#ff1744",symbol:"PE",spawnMsg:"A blazing phoenix cry echoes as PhoenixEmber ignites!",exact:700000000, event: "fire"},
-	PyroMirage:{rarity:"Imaginary",value:136,color:"#1a0000",symbol:"PM",spawnMsg:"Flames distort reality itself as PyroMirage flickers!",exact:1900000000, event: "fire"},
-	SolarInfernum:{rarity:"Zenith",value:137,color:"#ff5722",symbol:"SI",spawnMsg:"The sun flares violently as SolarInfernum descends!",exact:95000000000, event: "fire"},
-	EternalInfernis:{rarity:"Eternal",value:138,color:"#ffcc00",symbol:"EI",spawnMsg:"An eternal flame consumes time as EternalInfernis awakens!",exact:9500000000000, event: "fire"},
-	Bitcrystal:{rarity:"Exotic",value:139,color:"#00ffcc",symbol:"BC",spawnMsg:"Digital fragments assemble as Bitcrystal compiles!",exact:850000, event: "computer"},
-	DataCore:{rarity:"Exquisite",value:140,color:"#33ccff",symbol:"DC",spawnMsg:"System signals spike as DataCore initializes!",exact:17000000, event: "computer"},
-	GlitchShard:{rarity:"Transcendent",value:141,color:"#00ffff",symbol:"GS",spawnMsg:"Reality flickers as GlitchShard corrupts the grid!",exact:47000000, event: "computer"},
-	FirewallRelic:{rarity:"Enigmatic",value:142,color:"#ff0033",symbol:"FR",spawnMsg:"A digital barrier surges as FirewallRelic activates!",exact:99000000, event: "computer"},
-	QuantumKernel:{rarity:"Unfathomable",value:143,color:"#00ff66",symbol:"QK",spawnMsg:"Processing beyond comprehension begins as QuantumKernel boots!",exact:260000000, event: "computer"},
-	NeuralOverdrive:{rarity:"Otherworldly",value:144,color:"#0033ff",symbol:"NO",spawnMsg:"AI consciousness spikes as NeuralOverdrive evolves!",exact:720000000, event: "computer"},
-	SimulatedVoid:{rarity:"Imaginary",value:145,color:"#000000",symbol:"SV",spawnMsg:"The simulation fractures revealing SimulatedVoid!",exact:2000000000, event: "computer"},
-	OmegaProtocol:{rarity:"Zenith",value:146,color:"#cccccc",symbol:"OP",spawnMsg:"System override complete. OmegaProtocol engaged.",exact:100000000000, event: "computer"},
-	EternalAlgorithm:{rarity:"Eternal",value:147,color:"#ffffff",symbol:"EA",spawnMsg:"The final equation resolves as EternalAlgorithm executes infinitely!",exact:10000000000000, event: "computer"},
-	Radionite:{rarity:"Exotic",value:148,color:"#7fff00",symbol:"RN",spawnMsg:"A faint radioactive glow intensifies as Radionite stabilizes!",exact:900000, event: "nuclear"},
-	Uranex:{rarity:"Exquisite",value:149,color:"#66ff33",symbol:"UX",spawnMsg:"Energy pulses violently as Uranex begins to decay!",exact:18000000, event: "nuclear"},
-	PlutonShard:{rarity:"Transcendent",value:150,color:"#33cc33",symbol:"PS",spawnMsg:"Unstable atoms collide as PlutonShard crystallizes!",exact:50000000, event: "nuclear"},
-	ReactorCoreX:{rarity:"Enigmatic",value:151,color:"#228b22",symbol:"RC",spawnMsg:"Containment fails momentarily as ReactorCoreX materializes!",exact:110000000, event: "nuclear"},
-	AtomicCataclysm:{rarity:"Unfathomable",value:152,color:"#00aa00",symbol:"AC",spawnMsg:"A chain reaction surges as AtomicCataclysm forms!",exact:280000000, event: "nuclear"},
-	FusionOblivion:{rarity:"Otherworldly",value:153,color:"#00ff00",symbol:"FO",spawnMsg:"Fusion ignites beyond control as FusionOblivion emerges!",exact:800000000, event: "nuclear"},
-	GammaSingularity:{rarity:"Imaginary",value:154,color:"#003300",symbol:"GS",spawnMsg:"Gamma radiation distorts space as GammaSingularity appears!",exact:2200000000, event: "nuclear"},
-	MeltdownPrime:{rarity:"Zenith",value:155,color:"#adff2f",symbol:"MP",spawnMsg:"A catastrophic surge erupts as MeltdownPrime destabilizes reality!",exact:120000000000, event: "nuclear"},
-	EternalFission:{rarity:"Eternal",value:156,color:"#ccff00",symbol:"EF",spawnMsg:"Infinite fission fractures existence as EternalFission awakens!",exact:11000000000000, event: "nuclear"},
-	Evolite:{rarity:"Exotic",value:157,color:"#cfa26b",symbol:"EV",spawnMsg:"A soft evolutionary aura surrounds Evolite!",exact:950000, event: "evolie"},
-	Vaporeore:{rarity:"Exquisite",value:158,color:"#3399ff",symbol:"VP",spawnMsg:"Water ripples outward as Vaporeore flows into form!",exact:19000000, event: "evolie"},
-	Jolteonite:{rarity:"Transcendent",value:159,color:"#ffff33",symbol:"JL",spawnMsg:"Electric sparks scatter as Jolteonite discharges violently!",exact:52000000, event: "evolie"},
-	Flareonyx:{rarity:"Enigmatic",value:160,color:"#ff6600",symbol:"FL",spawnMsg:"Flames spiral upward as Flareonyx ignites the air!",exact:115000000, event: "evolie"},
-	Espeorite:{rarity:"Unfathomable",value:161,color:"#cc66ff",symbol:"ES",spawnMsg:"Psychic waves distort perception as Espeorite materializes!",exact:300000000, event: "evolie"},
-	Umbreonite:{rarity:"Otherworldly",value:162,color:"#111133",symbol:"UM",spawnMsg:"Shadows gather silently as Umbreonite reveals itself!",exact:850000000, event: "evolie"},
-	Leafeostone:{rarity:"Imaginary",value:163,color:"#66cc66",symbol:"LF",spawnMsg:"Nature's energy blossoms as Leafeostone grows instantly!",exact:2400000000, event: "evolie"},
-	Glaceorite:{rarity:"Zenith",value:164,color:"#99ffff",symbol:"GL",spawnMsg:"Absolute zero descends as Glaceorite freezes time itself!",exact:130000000000, event: "evolie"},
-	EternalEvolux:{rarity:"Eternal",value:165,color:"#ffffff",symbol:"EX",spawnMsg:"All evolutionary paths converge as EternalEvolux transcends existence!",exact:12000000000000, event: "evolie"},
+	Ice: {rarity: "IceCaveExclusive",value: 102,color: "#88eeff",symbol: "", exact: 1},
+	GlowingNova:{rarity:"EnergyCaveExclusive-Exquisite",value:103,color:"#ff00ff",symbol:"GN",spawnMsg:"GlowingNova illuminates the cavern with a soft pulse!",exact:1000000},
+	ZenithShard:{rarity:"EnergyCaveExclusive-Zenith",value:104,color:"#DF03FC",symbol:"ZS",spawnMsg:"ZenithShard glows with impossible energy!",exact:60000000},
+	Energy: {rarity: "EnergyCaveExclusive",value: 105,color: "#A327F5",symbol: "", exact: 1},
+	RadiantCore:{rarity:"NuclearCaveExclusive-Transcendent",value:106,color:"#ffd700",symbol:"RC",spawnMsg:"RadiantCore radiates blinding light across the cave!",exact:3000000},
+	NuclearWaste: {rarity: "NuclearCaveExclusive",value: 107,color: "#46F527",symbol: "", exact: 1},
+	ShadowGem:{rarity:"ShadowCaveExclusive-Enigmatic",value:108,color:"#4b0082",symbol:"SG",spawnMsg:"ShadowGem distorts the shadows in the cavern!",exact:5000000},
+	VoidOrb:{rarity:"ShadowCaveExclusive-Imaginary",value:109,color:"#000000",symbol:"VO",spawnMsg:"VoidOrb bends reality in the cavern!",exact:45000000},
+	ShadowMatter: {rarity: "ShadowCaveExclusive",value: 110,color: "#313831",symbol: "", exact: 1},
+	AbyssCrystal:{rarity:"AbyssCaveExclusive-Unfathomable",value:111,color:"#0d47a1",symbol:"AC",spawnMsg:"AbyssCrystal pulses with a bottomless energy!",exact:20000000},
+	AbyssFish:{rarity:"AbyssCaveExclusive-Zenith",value:112,color:"#003fa3",symbol:"Fish",spawnMsg:"Fish!",exact:69019008, imgSrc: "fish.gif"},
+	AbyssSand: {rarity: "AbyssCaveExclusive",value: 113,color: "#0B0E61",symbol: "", exact: 1},
+	LavaRelic:{rarity:"LavaCaveExclusive-Otherworldly",value:114,color:"#ff4500",symbol:"LR",spawnMsg:"LavaRelic radiates heat as it emerges from molten rock!",exact:38000000},
+	LavaRock: {rarity: "LavaCaveExclusive",value: 115,color: "#66584A",symbol: "", exact: 1},
+	EternalCrystal:{rarity:"CaveExclusive-Eternal",value:116,color:"#00FBFF",symbol:"EC",spawnMsg:"EternalCrystal shines like the heart of creation!",exact:100000000},
+	MythicObelisk:{rarity:"CaveExclusive-Mythical",value:117,color:"#ff5722",symbol:"MO",spawnMsg:"MythicObelisk towers impossibly, defying gravity!",exact:25000000},
+	CaveStone:{rarity:"CaveExclusiveCommon",value:118,color:"#777",exact:3},
+    CaveCoal:{rarity:"CaveExclusiveCommon",value:119,color:"#444",exact:10},
+    CaveIron:{rarity:"CaveExclusiveUncommon",value:120,color:"#aaa",exact:20},
+	Starflare:{rarity:"Exotic",value:121,color:"#ffd700",symbol:"SF",spawnMsg:"A distant star erupts as Starflare descends from the cosmos!",exact:750000, event: "space"},
+	Galaxium:{rarity:"Exquisite",value:122,color:"#9c27ff",symbol:"GX",spawnMsg:"Galaxium spirals into existence, bending light itself!",exact:15000000},
+	NebulonPrime:{rarity:"Transcendent",value:123,color:"#00e5ff",symbol:"NP",spawnMsg:"A celestial hum echoes as NebulonPrime forms from stellar dust!",exact:42000000, event: "space"},
+	EventHorizonShard:{rarity:"Enigmatic",value:124,color:"#1a1a1a",symbol:"EH",spawnMsg:"Space distorts violently around the EventHorizonShard!",exact:88000000, event: "space"},
+	SingularityCore:{rarity:"Unfathomable",value:125,color:"#000000",symbol:"SC",spawnMsg:"Gravity collapses inward as SingularityCore manifests!",exact:210000000, event: "space"},
+	AstralOblivion:{rarity:"Otherworldly",value:126,color:"#311b92",symbol:"AO",spawnMsg:"The void trembles as AstralOblivion tears through reality!",exact:600000000, event: "space"},
+	CosmicParallax:{rarity:"Imaginary",value:127,color:"#111111",symbol:"CP",spawnMsg:"Dimensions overlap as CosmicParallax fractures perception!",exact:1700000000, event: "space"},
+	HypernovaX:{rarity:"Zenith",value:128,color:"#ff1744",symbol:"HX",spawnMsg:"A supernova detonates across time as HypernovaX is born!",exact:80000000000, event: "space"},
+	VoidGenesis:{rarity:"Eternal",value:129,color:"#ffffff",symbol:"VG",spawnMsg:"Creation and annihilation intertwine as VoidGenesis awakens!",exact:8000000000000, event: "space"},
+	TidalShard:{rarity:"Exotic",value:130,color:"#00bfff",symbol:"TS",spawnMsg:"Tides surge violently as TidalShard rises from the abyss!",exact:800000, event: "ocean"},
+	AbyssPearl:{rarity:"Exquisite",value:131,color:"#66ccff",symbol:"AP",spawnMsg:"A deep resonance echoes as AbyssPearl surfaces from the depths!",exact:16000000,event:"ocean"},
+	MaelstromCore:{rarity:"Transcendent",value:132,color:"#0077be",symbol:"MC",spawnMsg:"A vortex spirals wildly as MaelstromCore forms!",exact:43000000,event:"ocean"},
+	LeviathanScale:{rarity:"Enigmatic",value:133,color:"#003366",symbol:"LS",spawnMsg:"Ancient waters churn as LeviathanScale emerges!",exact:92000000,event:"ocean"},
+	OceanicRift:{rarity:"Unfathomable",value:134,color:"#002244",symbol:"OR",spawnMsg:"The seabed splits apart revealing OceanicRift!",exact:225000000,event:"ocean"},
+	AbyssalCataclysm:{rarity:"Otherworldly",value:135,color:"#001133",symbol:"AC",spawnMsg:"The ocean roars as AbyssalCataclysm awakens!",exact:650000000,event:"ocean"},
+	DeepSeaMirage:{rarity:"Imaginary",value:136,color:"#0d0d1a",symbol:"DM",spawnMsg:"Reality ripples beneath crushing pressure as DeepSeaMirage appears!",exact:1800000000,event:"ocean"},
+	TsunamiPrime:{rarity:"Zenith",value:137,color:"#0099ff",symbol:"TP",spawnMsg:"A towering wave of power crashes forth as TsunamiPrime manifests!",exact:90000000000,event:"ocean"},
+	EternalTide:{rarity:"Eternal",value:138,color:"#00ffff",symbol:"ET",spawnMsg:"The oceans pause as EternalTide commands the abyss!",exact:9000000000000,event:"ocean"},
+	CinderSpark:{rarity:"Exotic",value:139,color:"#ff6600",symbol:"CS",spawnMsg:"A sudden burst of heat ignites as CinderSpark flares!",exact:820000,event:"fire"},
+	Blazite:{rarity:"Exquisite",value:140,color:"#ff3300",symbol:"BZ",spawnMsg:"Flames roar fiercely as Blazite crystallizes!",exact:16500000,event:"fire"},
+	InfernoShard:{rarity:"Transcendent",value:141,color:"#ff0000",symbol:"IS",spawnMsg:"Molten fury solidifies into InfernoShard!",exact:46000000,event:"fire"},
+	HellfireCore:{rarity:"Enigmatic",value:142,color:"#8b0000",symbol:"HC",spawnMsg:"The ground fractures as HellfireCore erupts!",exact:98000000,event:"fire"},
+	MoltenOblivion:{rarity:"Unfathomable",value:143,color:"#990000",symbol:"MO",spawnMsg:"Volcanic rage manifests as MoltenOblivion!",exact:240000000,event:"fire"},
+	PhoenixEmber:{rarity:"Otherworldly",value:144,color:"#ff1744",symbol:"PE",spawnMsg:"A blazing phoenix cry echoes as PhoenixEmber ignites!",exact:700000000,event:"fire"},
+	PyroMirage:{rarity:"Imaginary",value:145,color:"#1a0000",symbol:"PM",spawnMsg:"Flames distort reality itself as PyroMirage flickers!",exact:1900000000,event:"fire"},
+	SolarInfernum:{rarity:"Zenith",value:146,color:"#ff5722",symbol:"SI",spawnMsg:"The sun flares violently as SolarInfernum descends!",exact:95000000000,event:"fire"},
+	EternalInfernis:{rarity:"Eternal",value:147,color:"#ffcc00",symbol:"EI",spawnMsg:"An eternal flame consumes time as EternalInfernis awakens!",exact:9500000000000,event:"fire"},
+	Bitcrystal:{rarity:"Exotic",value:148,color:"#00ffcc",symbol:"BC",spawnMsg:"Digital fragments assemble as Bitcrystal compiles!",exact:850000,event:"computer"},
+	DataCore:{rarity:"Exquisite",value:149,color:"#33ccff",symbol:"DC",spawnMsg:"System signals spike as DataCore initializes!",exact:17000000,event:"computer"},
+	GlitchShard:{rarity:"Transcendent",value:150,color:"#00ffff",symbol:"GS",spawnMsg:"Reality flickers as GlitchShard corrupts the grid!",exact:47000000,event:"computer"},
+	FirewallRelic:{rarity:"Enigmatic",value:151,color:"#ff0033",symbol:"FR",spawnMsg:"A digital barrier surges as FirewallRelic activates!",exact:99000000,event:"computer"},
+	QuantumKernel:{rarity:"Unfathomable",value:152,color:"#00ff66",symbol:"QK",spawnMsg:"Processing beyond comprehension begins as QuantumKernel boots!",exact:260000000,event:"computer"},
+	NeuralOverdrive:{rarity:"Otherworldly",value:153,color:"#0033ff",symbol:"NO",spawnMsg:"AI consciousness spikes as NeuralOverdrive evolves!",exact:720000000,event:"computer"},
+	SimulatedVoid:{rarity:"Imaginary",value:154,color:"#000000",symbol:"SV",spawnMsg:"The simulation fractures revealing SimulatedVoid!",exact:2600000000,event:"computer"},
+	OmegaProtocol:{rarity:"Zenith",value:155,color:"#cccccc",symbol:"OP",spawnMsg:"System override complete. OmegaProtocol engaged.",exact:100000000000,event:"computer"},
+	EternalAlgorithm:{rarity:"Eternal",value:156,color:"#ffffff",symbol:"EA",spawnMsg:"The final equation resolves as EternalAlgorithm executes infinitely!",exact:10000000000000,event:"computer"},
+	Radionite:{rarity:"Exotic",value:157,color:"#7fff00",symbol:"RN",spawnMsg:"A faint radioactive glow intensifies as Radionite stabilizes!",exact:900000,event:"nuclear"},
+	Uranex:{rarity:"Exquisite",value:158,color:"#66ff33",symbol:"UX",spawnMsg:"Energy pulses violently as Uranex begins to decay!",exact:19000000,event:"nuclear"},
+	PlutonShard:{rarity:"Transcendent",value:159,color:"#33cc33",symbol:"PS",spawnMsg:"Unstable atoms collide as PlutonShard crystallizes!",exact:50000000,event:"nuclear"},
+	ReactorCoreX:{rarity:"Enigmatic",value:160,color:"#228b22",symbol:"RC",spawnMsg:"Containment fails momentarily as ReactorCoreX materializes!",exact:110000000,event:"nuclear"},
+	AtomicCataclysm:{rarity:"Unfathomable",value:161,color:"#00aa00",symbol:"AC",spawnMsg:"A chain reaction surges as AtomicCataclysm forms!",exact:280000000,event:"nuclear"},
+	FusionOblivion:{rarity:"Otherworldly",value:162,color:"#00ff00",symbol:"FO",spawnMsg:"Fusion ignites beyond control as FusionOblivion emerges!",exact:800000000,event:"nuclear"},
+	GammaSingularity:{rarity:"Imaginary",value:163,color:"#003300",symbol:"GS",spawnMsg:"Gamma radiation distorts space as GammaSingularity appears!",exact:2200000000,event:"nuclear"},
+	MeltdownPrime:{rarity:"Zenith",value:164,color:"#adff2f",symbol:"MP",spawnMsg:"A catastrophic surge erupts as MeltdownPrime destabilizes reality!",exact:120000000000,event:"nuclear"},
+	EternalFission:{rarity:"Eternal",value:165,color:"#ccff00",symbol:"EF",spawnMsg:"Infinite fission fractures existence as EternalFission awakens!",exact:11000000000000,event:"nuclear"},
+	Evolite:{rarity:"Exotic",value:166,color:"#cfa26b",symbol:"EV",spawnMsg:"A soft evolutionary aura surrounds Evolite!",exact:950000,event:"evolie"},
+	Vaporeore:{rarity:"Exquisite",value:167,color:"#3399ff",symbol:"VP",spawnMsg:"Water ripples outward as Vaporeore flows into form!",exact:19000000,event:"evolie"},
+	Jolteonite:{rarity:"Transcendent",value:168,color:"#ffff33",symbol:"JL",spawnMsg:"Electric sparks scatter as Jolteonite discharges violently!",exact:52000000,event:"evolie"},
+	Flareonyx:{rarity:"Enigmatic",value:169,color:"#ff6600",symbol:"FL",spawnMsg:"Flames spiral upward as Flareonyx ignites the air!",exact:115000000,event:"evolie"},
+	Espeorite:{rarity:"Unfathomable",value:170,color:"#cc66ff",symbol:"ES",spawnMsg:"Psychic waves distort perception as Espeorite materializes!",exact:300000000,event:"evolie"},
+	Umbreonite:{rarity:"Otherworldly",value:171,color:"#111133",symbol:"UM",spawnMsg:"Shadows gather silently as Umbreonite reveals itself!",exact:850000000,event:"evolie"},
+	Leafeostone:{rarity:"Imaginary",value:172,color:"#66cc66",symbol:"LF",spawnMsg:"Nature's energy blossoms as Leafeostone grows instantly!",exact:2400000000,event:"evolie"},
+	Glaceorite:{rarity:"Zenith",value:173,color:"#99ffff",symbol:"GL",spawnMsg:"Absolute zero descends as Glaceorite freezes time itself!",exact:130000000000,event:"evolie"},
+	EternalEvolux:{rarity:"Eternal",value:174,color:"#ffffff",symbol:"EX",spawnMsg:"All evolutionary paths converge as EternalEvolux transcends existence!",exact:12000000000000,event:"evolie"},
+	SpikeGem:{rarity:"Exotic",value:175,color:"#7c4dff",symbol:"SG",spawnMsg:"A small dragon roar echoes as SpikeGem sparkles brightly!",exact:1500000,event:"mlp"},
+	TwilightShard:{rarity:"Exquisite",value:176,color:"#b388ff",symbol:"TS",spawnMsg:"Arcane magic swirls as TwilightShard manifests!",exact:20000000,event:"mlp"},
+	ApplejackCore:{rarity:"Transcendent",value:177,color:"#ff9800",symbol:"AJ",spawnMsg:"Honest strength radiates from ApplejackCore!",exact:56000000,event:"mlp"},
+	PinkieCrystal:{rarity:"Enigmatic",value:178,color:"#ff69b4",symbol:"PC",spawnMsg:"Confetti explodes everywhere as PinkieCrystal appears!",exact:120000000,event:"mlp"},
+	RarityPrism:{rarity:"Unfathomable",value:179,color:"#e1bee7",symbol:"RP",spawnMsg:"Elegant brilliance shines from RarityPrism!",exact:300000000,event:"mlp"},
+	RainbowDashBolt:{rarity:"Otherworldly",value:180,color:"#00e5ff",symbol:"RD",spawnMsg:"A sonic boom cracks the sky as RainbowDashBolt strikes!",exact:850000000,event:"mlp"},
+	FluttershyBloom:{rarity:"Imaginary",value:181,color:"#fff176",symbol:"FB",spawnMsg:"A gentle breeze carries FluttershyBloom into existence...",exact:2500000000,event:"mlp"},
+	CelestiaLight:{rarity:"Zenith",value:182,color:"#ffffff",symbol:"CL",spawnMsg:"Radiant sunlight descends as CelestiaLight shines eternal!",exact:150000000000,event:"mlp"},
+	LunarEclipse:{rarity:"Eternal",value:183,color:"#1a237e",symbol:"LE",spawnMsg:"The night sky deepens as LunarEclipse awakens...",exact:50000000000000,event:"mlp"},
+	CobaltShard:{rarity:"Exotic",value:184,color:"#1e88e5",symbol:"CO",spawnMsg:"The jungle trembles as CobaltShard forms!",exact:2500000,event:"terraria"},
+	PalladiumCore:{rarity:"Exquisite",value:185,color:"#ff7043",symbol:"PA",spawnMsg:"A warm glow radiates from PalladiumCore!",exact:20000000,event:"terraria"},
+	MythrilCrystal:{rarity:"Transcendent",value:186,color:"#4caf50",symbol:"MY",spawnMsg:"MythrilCrystal hums with ancient power!",exact:54000000,event:"terraria"},
+	OrichalcumBloom:{rarity:"Enigmatic",value:187,color:"#ec407a",symbol:"OR",spawnMsg:"OrichalcumBloom blossoms violently!",exact:120000000,event:"terraria"},
+	AdamantiteFragment:{rarity:"Unfathomable",value:188,color:"#ef5350",symbol:"AD",spawnMsg:"AdamantiteFragment radiates searing heat!",exact:300000000,event:"terraria"},
+	TitaniumRelic:{rarity:"Otherworldly",value:189,color:"#b0bec5",symbol:"TI",spawnMsg:"TitaniumRelic refracts light brilliantly!",exact:850000000,event:"terraria"},
+	ChlorophyteCore:{rarity:"Zenith",value:190,color:"#66bb6a",symbol:"CH",spawnMsg:"The jungle pulses as ChlorophyteCore awakens!",exact:200000000000,event:"terraria"},
+	LuminiteEssence:{rarity:"Eternal",value:191,color:"#b39ddb",symbol:"LU",spawnMsg:"A cosmic force descends... LuminiteEssence manifests!",exact:25000000000000,event:"terraria"},
 };
+
 const oreImages = {};
 for (let ore in oreData) {
     if (oreData[ore].imgSrc) {
@@ -1889,7 +1927,9 @@ if (r.event) {
         fire: "#ff5722",
         computer: "#00ffcc",
         nuclear: "#7fff00",
-        evolie: "#cfa26b"
+        evolie: "#cfa26b",
+		mlp: "#ff66cc",
+		terraria: "#66bb6a",
     };
 
     eventTag = `
