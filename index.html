@@ -493,6 +493,19 @@
     </div>
 	<div id="eventBox" class="event-box">No event active</div>
     <!-- Main UI panels -->
+<input type="text" id="oreSearch" placeholder="Search ore name, rarity, event, cave, normal..."
+style="
+    width: 500px;
+    padding: 6px;
+    margin-bottom: 6px;
+    background: #111;
+    color: white;
+    border: 1px solid #444;
+
+    display: block;
+    margin-left: 75px;
+    margin-right: auto;
+">
     <div id="ui">
         <div id="pickaxeUI"><h3>Pickaxes</h3></div>
         <div id="gearUI"><h3>Gear</h3></div>
@@ -505,7 +518,6 @@
         <div id="totalMined">Total Mined: 0</div>
         <div id="globalMined">Global Mined: 0</div>
     </div>
-
     <!-- Bottom panels -->
     <div id="bottomPanels">
         <div id="oreIndex">
@@ -1852,14 +1864,50 @@ function spendCost(cost) {
 
 	function updateUI() {
     const invDiv = document.getElementById("inventory");
+    const search = document.getElementById("oreSearch").value.toLowerCase().trim();
+
     invDiv.innerHTML = "";
 
     Object.keys(inventory)
-        .sort((a, b) => sortRarestFirst ? oreData[b].exact - oreData[a].exact : oreData[a].exact - oreData[b].exact)
+        .sort((a, b) =>
+            sortRarestFirst
+                ? oreData[b].exact - oreData[a].exact
+                : oreData[a].exact - oreData[b].exact
+        )
         .forEach(o => {
+
             const r = oreData[o];
             const count = inventory[o] || 0;
+            if (!r || count <= 0) return;
 
+            // 🔎 Filtering logic
+            const nameMatch = o.toLowerCase().includes(search);
+            const rarityMatch = r.rarity.toLowerCase().includes(search);
+
+            const eventMatch = r.event && (
+                search === "event" ||
+                search === r.event.toLowerCase()
+            );
+
+            const caveMatch = r.cave && (
+                search === "cave" ||
+                search === r.cave.toLowerCase()
+            );
+
+            const normalMatch = search === "normal" &&
+                !r.event &&
+                !r.cave;
+
+            if (
+                search &&
+                !nameMatch &&
+                !rarityMatch &&
+                !eventMatch &&
+                !caveMatch &&
+                !normalMatch
+            ) return;
+
+            // 🎨 Your original styling preserved
             const div = document.createElement("div");
             div.style.cursor = "pointer";
             div.style.background = r.color;
@@ -1867,13 +1915,14 @@ function spendCost(cost) {
             div.style.border = "2px solid #000";
             div.style.padding = "2px";
             div.style.marginBottom = "2px";
+
             div.innerHTML = `${o} (${r.rarity}) - ${formatNumber(count)}`;
-            
-            // Click to show ore viewer
+
             div.onclick = () => showOreViewer(o);
 
             invDiv.appendChild(div);
         });
+
 
     // Pickaxes, Gears, Artefacts, Luck Artefacts
     const pUI = document.getElementById("pickaxeUI");
@@ -1894,17 +1943,53 @@ function spendCost(cost) {
 
 	function updateOreIndex() {
     const indexDiv = document.getElementById("oreIndex");
+    const search = document.getElementById("oreSearch").value.toLowerCase().trim();
+
     const allOres = Object.keys(oreData);
 
-    // Count how many ores you actually own (>0)
-    const discoveredOres = allOres.filter(ore => (inventory[ore] || 0) > 0).length;
+    indexDiv.innerHTML = "";
 
-    indexDiv.innerHTML = `<h3>Ore Index (${discoveredOres} / ${allOres.length})</h3>`;
+    const filteredOres = allOres.filter(ore => {
+        const r = oreData[ore];
 
-    allOres
-    .sort((a, b) => sortRarestFirst 
-        ? oreData[b].exact - oreData[a].exact 
-        : oreData[a].exact - oreData[b].exact
+        const nameMatch = ore.toLowerCase().includes(search);
+        const rarityMatch = r.rarity.toLowerCase().includes(search);
+
+        const eventMatch = r.event && (
+            search === "event" ||
+            search === r.event.toLowerCase()
+        );
+
+        const caveMatch = r.cave && (
+            search === "cave" ||
+            search === r.cave.toLowerCase()
+        );
+
+        const normalMatch = search === "normal" &&
+            !r.event &&
+            !r.cave;
+
+        return (
+            !search ||
+            nameMatch ||
+            rarityMatch ||
+            eventMatch ||
+            caveMatch ||
+            normalMatch
+        );
+    });
+
+    const discoveredOres = filteredOres.filter(
+        ore => (inventory[ore] || 0) > 0
+    ).length;
+
+    indexDiv.innerHTML = `<h3>Ore Index (${discoveredOres} / ${filteredOres.length})</h3>`;
+
+    filteredOres
+    .sort((a, b) =>
+        sortRarestFirst
+            ? oreData[b].exact - oreData[a].exact
+            : oreData[a].exact - oreData[b].exact
     )
     .forEach(ore => {
 
@@ -1918,37 +2003,37 @@ function spendCost(cost) {
         div.style.marginBottom = "1px";
         div.style.cursor = "pointer";
 
-       let eventTag = "";
+        let eventTag = "";
 
-if (r.event) {
-    const eventColors = {
-        space: "#9c27ff",
-        ocean: "#00bfff",
-        fire: "#ff5722",
-        computer: "#00ffcc",
-        nuclear: "#7fff00",
-        evolie: "#cfa26b",
-		mlp: "#ff66cc",
-		terraria: "#66bb6a",
-    };
+        if (r.event) {
+            const eventColors = {
+                space: "#9c27ff",
+                ocean: "#00bfff",
+                fire: "#ff5722",
+                computer: "#00ffcc",
+                nuclear: "#7fff00",
+                evolie: "#cfa26b",
+                mlp: "#ff66cc",
+                terraria: "#66bb6a"
+            };
 
-    eventTag = `
-        <span style="
-            color:${eventColors[r.event] || "#ffffff"};
-            font-weight:bold;
-            margin-left:6px;
-        ">
-            [${r.event.toUpperCase()}]
-        </span>
-    `;
-}
+            eventTag = `
+                <span style="
+                    color:${eventColors[r.event] || "#ffffff"};
+                    font-weight:bold;
+                    margin-left:6px;
+                ">
+                    [${r.event.toUpperCase()}]
+                </span>
+            `;
+        }
 
-div.innerHTML = `${ore} (${r.rarity}) - 1 in ${formatNumber(r.exact)}${eventTag}`;
+        div.innerHTML = `${ore} (${r.rarity}) - 1 in ${formatNumber(r.exact)}${eventTag}`;
 
         indexDiv.appendChild(div);
     });
 }
-
+	
 // PICKAXE BUTTON
 function createPickaxeButton(name, desc, cost) {
     const container = document.createElement("div");
@@ -2254,6 +2339,7 @@ function loadGame() {
         currentVolumeIndex = 0;
     }
 }
+document.getElementById("oreSearch").addEventListener("input", updateOreIndex);
 loadGame();
 document.querySelectorAll("audio").forEach(a => {
     a.volume = volumeLevels[currentVolumeIndex];
