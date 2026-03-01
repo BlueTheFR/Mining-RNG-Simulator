@@ -550,6 +550,7 @@ style="
     <audio id="Imaginary" src="Imaginary.mp3" preload="auto"></audio>
     <audio id="Zenith" src="Zenith.mp3"></audio>
     <audio id="Eternal" src="Eternal.mp3"></audio>
+	<audio id="EpineAudio" src="EpineAudio.mp3" preload="auto"></audio>
 
 </body>
 
@@ -654,13 +655,13 @@ const caveTypes = {
 
     NormalCave: {
         caveBlocks: ["CaveStone", "CaveCoal", "CaveIron"],
-        exclusiveOres: ["EternalCrystal", "MythicObelisk"],
+        exclusiveOres: ["EternalCrystal", "MonolithofOrigin"],
         rareChance: 0.5 // 1 in 2
     },
 
     IceCave: {
         caveBlocks: ["Ice"],
-        exclusiveOres: ["CrystalFrost"],
+        exclusiveOres: ["CrystalFrost", "Frostblossom"],
         rareChance: 1/8
     },
 
@@ -690,8 +691,8 @@ const caveTypes = {
 
     LavaCave: {
         caveBlocks: ["LavaRock"],
-        exclusiveOres: ["LavaRelic"],
-        rareChance: 1/250
+        exclusiveOres: ["LavaRelic", "Epinephrine"],
+        rareChance:  1/250
     }
 };
 
@@ -840,6 +841,8 @@ function updateCaveUI() {
     msgDiv.style.display = "block";
 
     let audioId = null;
+	if (ore === "Epinephrine") {audioId = "EpineAudio";}
+
 
     // Special mapping for cave-exclusive and unique ores
     const specialRaritySounds = {
@@ -853,12 +856,12 @@ function updateCaveUI() {
         "AbyssCaveExclusive-Zenith": "Zenith",
         "LavaCaveExclusive-Otherworldly": "Otherworldly",
         "CaveExclusive-Mythical": "Otherworldly",
-        "CaveExclusive-Eternal": "Eternal"
+        "CaveExclusive-Eternal": "Eternal",
+		"IceCaveExclusive-Eternal": "Eternal"
     };
 
     // Use the special audio if it exists for this ore's rarity
-    if (specialRaritySounds[data.rarity]) {
-        audioId = specialRaritySounds[data.rarity];
+    if (!audioId && specialRaritySounds[data.rarity]) {audioId = specialRaritySounds[data.rarity];
     } else {
         // Otherwise, use the numeric "exact" ranges
         const exact = data.exact;
@@ -894,7 +897,7 @@ function updateCaveUI() {
         /* =========================
            🔥 ETERNAL EFFECT
         ========================== */
-        if (data.rarity === "Eternal" || data.rarity === "SPAFF"|| data.rarity === "CaveExclusive-Eternal") {
+        if (data.rarity === "Eternal" || data.rarity === "SPAFF"|| data.rarity === "CaveExclusive-Eternal"|| data.rarity === "LavaCaveExclusive-Eternal"|| data.rarity === "IceCaveExclusive-Eternal") {
             const overlay = document.getElementById("spawnEffect");
             overlay.style.transition = "background 0s linear";
             overlay.style.background = "transparent";
@@ -1168,11 +1171,11 @@ const oreData = {
     Singularity:{rarity:"Imaginary",value:36,color:"#000000",symbol:"Ω",symbolColor:"#ff00ff",spawnMsg:"Time stops. Space collapses. You found the impossible.",exact:2000000000},
     AlterDemon:{rarity:"Divine",value:37,color:"#000000",symbol:"AD",symbolColor:"#ff0000",spawnMsg:"Alters demon is here to catch you",exact:1000000},
     Veritcal:{rarity:"Imaginary",value:38,color:"#90D5FF",symbol:"Vert",symbolColor:"#000000",spawnMsg:"You shouldn't dig straight down",exact:4444444444, imgSrc: "Vert.png"},
-    Zanacharium:{rarity:"Zenith",value:39,color:"#DF03FC",symbol:"?",symbolColor:"#000000",spawnMsg:"An unusual force materializes upon the surface of this world...",exact:68750000000},
+    Zanacharium:{rarity:"Zenith",value:39,color:"#DF03FC",symbol:"?",symbolColor:"#000000",spawnMsg:"An unusual force materializes upon the surface of this world...",exact:68750000000, imgSrc:"Zanarchium.webp"},
     Chronovexium:{rarity:"Zenith",value:40,color:"#00F0FF",symbol:"⏳",symbolColor:"#000000",spawnMsg:"Time fractures as Chronovexium emerges from the continuum...",exact:125000000000},
     Aetherion:{rarity:"Zenith",value:41,color:"#FFD700",symbol:"✶",symbolColor:"#000000",spawnMsg:"The heavens shimmer as Aetherion descends into existence...",exact:350000000000},
     Paradoxium:{rarity:"Eternal",value:42,color:"#6A00FF",symbol:"Ψ",symbolColor:"#FFFFFF",spawnMsg:"Reality twists into an impossible shape as Paradoxium manifests...",exact:1500000000000},
-    GenesisFragment:{rarity:"Eternal",value:43,color:"#FFFFFF",symbol:"✦",symbolColor:"#000000",spawnMsg:"A spark of creation ignites as the Genesis Fragment forms...",exact:5000000000000},
+    Genesis:{rarity:"Eternal",value:43,color:"#FFFFFF",spawnMsg:"Twisting circuitry explodes in a ferocious outburst of electric energy...",exact:5000000000000, imgSrc:"GENESIS.webp"},
     BlueTheFR:{rarity:"Eternal",value:44,color:"#00FBFF",symbol:"Blue",symbolColor:"#FFFFFF",spawnMsg:"You meet the creator...",exact:100000000000000, imgSrc: "Blue.png"},
     Nebulium:{rarity:"Transcendent", value:45, color:"#76ff03", symbol:"N", spawnMsg:"You hear a ringing!", exact:26000000},
     Stellarium:{rarity:"Transcendent", value:46, color:"#00bcd4", symbol:"St", spawnMsg:"You hear a ringing!", exact:28000000},
@@ -1246,7 +1249,7 @@ const oreData = {
 	LavaRelic:{rarity:"LavaCaveExclusive-Otherworldly",value:114,color:"#ff4500",symbol:"LR",spawnMsg:"LavaRelic radiates heat as it emerges from molten rock!",exact:38000000},
 	LavaRock: {rarity: "LavaCaveExclusive",value: 115,color: "#66584A",symbol: "", exact: 1},
 	EternalCrystal:{rarity:"CaveExclusive-Eternal",value:116,color:"#00FBFF",symbol:"EC",spawnMsg:"EternalCrystal shines like the heart of creation!",exact:100000000},
-	MythicObelisk:{rarity:"CaveExclusive-Mythical",value:117,color:"#ff5722",symbol:"MO",spawnMsg:"MythicObelisk towers impossibly, defying gravity!",exact:25000000},
+	MonolithofOrigin :{rarity:"CaveExclusive-Mythical",value:117, color:"#ff9100",spawnMsg:"From its nascence, stars dawn and illuminate the universe...",exact:25000000, imgSrc:"MonolithofOrigin.webp"},
 	CaveStone:{rarity:"CaveExclusiveCommon",value:118,color:"#777",exact:3},
     CaveCoal:{rarity:"CaveExclusiveCommon",value:119,color:"#444",exact:10},
     CaveIron:{rarity:"CaveExclusiveUncommon",value:120,color:"#aaa",exact:20},
@@ -1258,13 +1261,13 @@ const oreData = {
 	AstralOblivion:{rarity:"Otherworldly",value:126,color:"#311b92",symbol:"AO",spawnMsg:"The void trembles as AstralOblivion tears through reality!",exact:600000000, event: "space"},
 	CosmicParallax:{rarity:"Imaginary",value:127,color:"#111111",symbol:"CP",spawnMsg:"Dimensions overlap as CosmicParallax fractures perception!",exact:1700000000, event: "space"},
 	HypernovaX:{rarity:"Zenith",value:128,color:"#ff1744",symbol:"HX",spawnMsg:"A supernova detonates across time as HypernovaX is born!",exact:80000000000, event: "space"},
-	VoidGenesis:{rarity:"Eternal",value:129,color:"#ffffff",symbol:"VG",spawnMsg:"Creation and annihilation intertwine as VoidGenesis awakens!",exact:8000000000000, event: "space"},
+	GodDirectriol:{rarity:"Eternal",value:129,color:"#ffffff",symbol:"VG",spawnMsg:"Complex paths contour across parallel dimensions...",exact:8000000000000, event: "space", imgSrc:"GodDirectriolNor.gif"},
 	TidalShard:{rarity:"Exotic",value:130,color:"#00bfff",symbol:"TS",spawnMsg:"Tides surge violently as TidalShard rises from the abyss!",exact:800000, event: "ocean"},
 	AbyssPearl:{rarity:"Exquisite",value:131,color:"#66ccff",symbol:"AP",spawnMsg:"A deep resonance echoes as AbyssPearl surfaces from the depths!",exact:16000000,event:"ocean"},
 	MaelstromCore:{rarity:"Transcendent",value:132,color:"#0077be",symbol:"MC",spawnMsg:"A vortex spirals wildly as MaelstromCore forms!",exact:43000000,event:"ocean"},
 	LeviathanScale:{rarity:"Enigmatic",value:133,color:"#003366",symbol:"LS",spawnMsg:"Ancient waters churn as LeviathanScale emerges!",exact:92000000,event:"ocean"},
 	OceanicRift:{rarity:"Unfathomable",value:134,color:"#002244",symbol:"OR",spawnMsg:"The seabed splits apart revealing OceanicRift!",exact:225000000,event:"ocean"},
-	AbyssalCataclysm:{rarity:"Otherworldly",value:135,color:"#001133",symbol:"AC",spawnMsg:"The ocean roars as AbyssalCataclysm awakens!",exact:650000000,event:"ocean"},
+	AbyssalCataclysm:{rarity:"Otherworldly",value:135,color:"#001133",symbol:"AC",spawnMsg:"The ocean roars as AbyssalCataclysm awakens!",exact:666000000,event:"ocean"},
 	DeepSeaMirage:{rarity:"Imaginary",value:136,color:"#0d0d1a",symbol:"DM",spawnMsg:"Reality ripples beneath crushing pressure as DeepSeaMirage appears!",exact:1800000000,event:"ocean"},
 	TsunamiPrime:{rarity:"Zenith",value:137,color:"#0099ff",symbol:"TP",spawnMsg:"A towering wave of power crashes forth as TsunamiPrime manifests!",exact:90000000000,event:"ocean"},
 	EternalTide:{rarity:"Eternal",value:138,color:"#00ffff",symbol:"ET",spawnMsg:"The oceans pause as EternalTide commands the abyss!",exact:9000000000000,event:"ocean"},
@@ -1276,7 +1279,7 @@ const oreData = {
 	PhoenixEmber:{rarity:"Otherworldly",value:144,color:"#ff1744",symbol:"PE",spawnMsg:"A blazing phoenix cry echoes as PhoenixEmber ignites!",exact:700000000,event:"fire"},
 	PyroMirage:{rarity:"Imaginary",value:145,color:"#1a0000",symbol:"PM",spawnMsg:"Flames distort reality itself as PyroMirage flickers!",exact:1900000000,event:"fire"},
 	SolarInfernum:{rarity:"Zenith",value:146,color:"#ff5722",symbol:"SI",spawnMsg:"The sun flares violently as SolarInfernum descends!",exact:95000000000,event:"fire"},
-	EternalInfernis:{rarity:"Eternal",value:147,color:"#ffcc00",symbol:"EI",spawnMsg:"An eternal flame consumes time as EternalInfernis awakens!",exact:9500000000000,event:"fire"},
+	Thermazine:{rarity:"Eternal",value:147,color:"#ffcc00",symbol:"EI",spawnMsg:"Thermal opposites perform an exotic dance in harmonious duality...",exact:9500000000000,event:"fire", imgSrc:"Thermazine.webp"},
 	Bitcrystal:{rarity:"Exotic",value:148,color:"#00ffcc",symbol:"BC",spawnMsg:"Digital fragments assemble as Bitcrystal compiles!",exact:850000,event:"computer"},
 	DataCore:{rarity:"Exquisite",value:149,color:"#33ccff",symbol:"DC",spawnMsg:"System signals spike as DataCore initializes!",exact:17000000,event:"computer"},
 	GlitchShard:{rarity:"Transcendent",value:150,color:"#00ffff",symbol:"GS",spawnMsg:"Reality flickers as GlitchShard corrupts the grid!",exact:47000000,event:"computer"},
@@ -1284,8 +1287,8 @@ const oreData = {
 	QuantumKernel:{rarity:"Unfathomable",value:152,color:"#00ff66",symbol:"QK",spawnMsg:"Processing beyond comprehension begins as QuantumKernel boots!",exact:260000000,event:"computer"},
 	NeuralOverdrive:{rarity:"Otherworldly",value:153,color:"#0033ff",symbol:"NO",spawnMsg:"AI consciousness spikes as NeuralOverdrive evolves!",exact:720000000,event:"computer"},
 	SimulatedVoid:{rarity:"Imaginary",value:154,color:"#000000",symbol:"SV",spawnMsg:"The simulation fractures revealing SimulatedVoid!",exact:2600000000,event:"computer"},
-	OmegaProtocol:{rarity:"Zenith",value:155,color:"#cccccc",symbol:"OP",spawnMsg:"System override complete. OmegaProtocol engaged.",exact:100000000000,event:"computer"},
-	EternalAlgorithm:{rarity:"Eternal",value:156,color:"#ffffff",symbol:"EA",spawnMsg:"The final equation resolves as EternalAlgorithm executes infinitely!",exact:10000000000000,event:"computer"},
+	CHECKPOINT:{rarity:"Zenith",value:155,color:"#0eb522",spawnMsg:"Networks of transient beings from a higher plane invade the mines...",exact:100000000000,event:"computer", imgSrc:"CHECKPOINT.webp"},
+	Gateway:{rarity:"Eternal",value:156,color:"#0e008c",spawnMsg:"404: MESSAGE NOT FOUND. RETURNING TO EVENT IN 10 SECONDS.",exact:10000000000000,event:"computer", imgSrc:"Gateway.webp"},
 	Radionite:{rarity:"Exotic",value:157,color:"#7fff00",symbol:"RN",spawnMsg:"A faint radioactive glow intensifies as Radionite stabilizes!",exact:900000,event:"nuclear"},
 	Uranex:{rarity:"Exquisite",value:158,color:"#66ff33",symbol:"UX",spawnMsg:"Energy pulses violently as Uranex begins to decay!",exact:19000000,event:"nuclear"},
 	PlutonShard:{rarity:"Transcendent",value:159,color:"#33cc33",symbol:"PS",spawnMsg:"Unstable atoms collide as PlutonShard crystallizes!",exact:50000000,event:"nuclear"},
@@ -1294,7 +1297,7 @@ const oreData = {
 	FusionOblivion:{rarity:"Otherworldly",value:162,color:"#00ff00",symbol:"FO",spawnMsg:"Fusion ignites beyond control as FusionOblivion emerges!",exact:800000000,event:"nuclear"},
 	GammaSingularity:{rarity:"Imaginary",value:163,color:"#003300",symbol:"GS",spawnMsg:"Gamma radiation distorts space as GammaSingularity appears!",exact:2200000000,event:"nuclear"},
 	MeltdownPrime:{rarity:"Zenith",value:164,color:"#adff2f",symbol:"MP",spawnMsg:"A catastrophic surge erupts as MeltdownPrime destabilizes reality!",exact:120000000000,event:"nuclear"},
-	EternalFission:{rarity:"Eternal",value:165,color:"#ccff00",symbol:"EF",spawnMsg:"Infinite fission fractures existence as EternalFission awakens!",exact:11000000000000,event:"nuclear"},
+	VelaPulsar:{rarity:"Eternal",value:165,color:"#ccff00",symbol:"EF",spawnMsg:"A chaotic pulsar corrodes life at the subatomic level...",exact:11000000000000,event:"nuclear", imgSrc:"VelaPulsarNor.webp"},
 	Evolite:{rarity:"Exotic",value:166,color:"#cfa26b",symbol:"EV",spawnMsg:"A soft evolutionary aura surrounds Evolite!",exact:950000,event:"evolie"},
 	Vaporeore:{rarity:"Exquisite",value:167,color:"#3399ff",symbol:"VP",spawnMsg:"Water ripples outward as Vaporeore flows into form!",exact:19000000,event:"evolie"},
 	Jolteonite:{rarity:"Transcendent",value:168,color:"#ffff33",symbol:"JL",spawnMsg:"Electric sparks scatter as Jolteonite discharges violently!",exact:52000000,event:"evolie"},
@@ -1321,6 +1324,11 @@ const oreData = {
 	TitaniumRelic:{rarity:"Otherworldly",value:189,color:"#b0bec5",symbol:"TI",spawnMsg:"TitaniumRelic refracts light brilliantly!",exact:950000000,event:"terraria"},
 	ChlorophyteCore:{rarity:"Zenith",value:190,color:"#66bb6a",symbol:"CH",spawnMsg:"The jungle pulses as ChlorophyteCore awakens!",exact:200000000000,event:"terraria"},
 	LuminiteEssence:{rarity:"Eternal",value:191,color:"#b39ddb",symbol:"LU",spawnMsg:"A cosmic force descends... LuminiteEssence manifests!",exact:25000000000000,event:"terraria"},
+	Epinephrine:{rarity:"LavaCaveExclusive-Eternal",value:192,color:"#ff4500",symbol:"EP",spawnMsg:"Your adrenaline surges violently as Epinephrine erupts from the magma!",exact:999000000, imgSrc:"Epinephrine.webp"},
+	Chromablank:{rarity:"Otherworldly", value:193, color:"#ff1744", symbol:"CB", exact: 550550550, spawnMsg:"INFINITE CHROMATIC BEAUTY, AROUND A VOID OF SILENCE.", imgSrc:"ChromablankNor.webp"},
+	Observatorium:{rarity:"Otherworldly", value:194, color:"#3c2dc4", exact: 630245790, spawnMsg:"At the heart of an arcane cluster, ruins of an enchanted observatory align to the stars...", imgSrc:"ObservatoriumRev.webp"},
+	UnstableMegacore:{rarity:"Otherworldly", value:195, color:"#083dff", exact: 980000000, spawnMsg:"A THUNDEROUS QUASAR THREATENS LIFE AND BEING...", imgSrc:"UnstableMegacore.gif"},
+	Frostblossom:{rarity:"IceCaveExclusive-Eternal",value:196,color:"#00ffff",symbol:"FB",spawnMsg:"A solitude seed of ice sprouts from the frost, its petals wrapping around the ground beneath it...",exact:183640000, imgSrc:"FB.webp"},
 };
 
 const oreImages = {};
@@ -1423,7 +1431,7 @@ const extraLuckLevels = {
     57: { desc: "+4000% luck for ores ≥ 1K", cost: { Voidessence: 2 } },
     58: { desc: "+5000% luck for ores ≥ 1K", cost: { CosmicRelic: 2, Infinity: 1 } },
     59: { desc: "+7500% luck for ores ≥ 1K", cost: { Aetherion: 1 } },
-    60: { desc: "+10000% luck for ores ≥ 1K", cost: { GenesisFragment: 1 } },
+    60: { desc: "+10000% luck for ores ≥ 1K", cost: { Genesis: 1 } },
 };
 
 // Merge the extra levels into the main luckArtefactData
@@ -2288,7 +2296,15 @@ function showOreViewer(ore) {
     }
 }
 
-
+// Remove invalid ores from inventory
+function sanitizeInventory() {
+    for (let ore in inventory) {
+        if (!oreData[ore]) {
+            console.warn(`Removed invalid ore from inventory: ${ore}`);
+            delete inventory[ore];
+        }
+    }
+}
 
 
 // Replay button
@@ -2332,8 +2348,9 @@ function loadGame() {
         pauseOnChill = data.pauseOnChill || false;
         waitingForManualHighOre = data.waitingForManualHighOre || false;
         currentVolumeIndex = data.currentVolumeIndex ?? 0;
-		setInterval(updateCaveUI, 1000); // updates once per second
 
+        sanitizeInventory();  // <-- safeguard applied here
+        setInterval(updateCaveUI, 1000); 
     } else {
         inventory = {};
         currentVolumeIndex = 0;
