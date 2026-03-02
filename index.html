@@ -714,7 +714,6 @@ function checkForCaveSpawn() {
             activeCave = cave;
             activeCave.startTime = Date.now();
             caveEndAt = blocksMined + CAVE_DURATION;
-            console.log(`A ${caveKey} has appeared!`);
             return;
         }
     }
@@ -778,7 +777,6 @@ function updateCaveUI() {
         activeCave = null;
 		lastCaveEndAt = blocksMined; 
         box.innerHTML = "No Cave Active";
-        console.log("The cave has collapsed.");
     }
 }
 
@@ -841,9 +839,6 @@ function updateCaveUI() {
     msgDiv.style.display = "block";
 
     let audioId = null;
-	if (ore === "Epinephrine") {audioId = "EpineAudio";}
-
-
     // Special mapping for cave-exclusive and unique ores
     const specialRaritySounds = {
         "IceCaveExclusive-Exotic": "Achillgoesdownyourspine",
@@ -857,7 +852,8 @@ function updateCaveUI() {
         "LavaCaveExclusive-Otherworldly": "Otherworldly",
         "CaveExclusive-Mythical": "Otherworldly",
         "CaveExclusive-Eternal": "Eternal",
-		"IceCaveExclusive-Eternal": "Eternal"
+		"IceCaveExclusive-Eternal": "Eternal",
+		"LavaCaveExclusive-Eternal": "EpineAudio"
     };
 
     // Use the special audio if it exists for this ore's rarity
@@ -1403,12 +1399,12 @@ const artefactData = {
     2:{desc:"Mines 2 block every 4s",cost:{Coal:10},interval:4000,blocks:2},
     3:{desc:"Mines 3 block every 1s",cost:{Emerald:25},interval:1000,blocks:3},
     4:{desc:"Mines 5 blocks every 1s",cost:{Void:20},interval:1000,blocks:5},
-    5:{desc:"Mines 25 blocks every 1s",cost:{HyperMega:1},interval:1000,blocks:25},
-	6:{desc:"Mines 30 blocks every 1s",cost:{Tera:1},interval:1000,blocks:30},
-	7:{desc:"Mines 40 blocks every 1s",cost:{TeraPlus:1},interval:1000,blocks:40},
-	8:{desc:"Mines 50 blocks every 1s",cost:{PetaPlus1:1},interval:1000,blocks:50},
-	9:{desc:"Mines 60 blocks every 1s",cost:{Celestium:1},interval:1000,blocks:60},
-	10:{desc:"Mines 80 blocks every 1s",cost:{Nebulium:1},interval:1000,blocks:80},
+    5:{desc:"Mines 15 blocks every 1s",cost:{HyperMega:1},interval:1000,blocks:15},
+	6:{desc:"Mines 20 blocks every 1s",cost:{Tera:1},interval:1000,blocks:20},
+	7:{desc:"Mines 25 blocks every 1s",cost:{TeraPlus:1},interval:1000,blocks:25},
+	8:{desc:"Mines 30 blocks every 1s",cost:{PetaPlus1:1},interval:1000,blocks:30},
+	9:{desc:"Mines 40 blocks every 1s",cost:{Celestium:1},interval:1000,blocks:40},
+	10:{desc:"Mines 50 blocks every 1s",cost:{Nebulium:1},interval:1000,blocks:50},
 };
 
 // Luck Artefacts for levels 1–50
@@ -1823,12 +1819,19 @@ if (activeCave && activeCave.caveBlocks.includes(ore2)) {
         }
 
         // Add normal ore to inventory
-        inventory[ore2] = (inventory[ore2] || 0) + count;
+        const isNewOre = !(ore2 in inventory);
+
+inventory[ore2] = (inventory[ore2] || 0) + count;
+
+if (isNewOre) {
+    discoveredOres.add(ore2);
+    requestUIUpdate(true); // Force update immediately
+}
         updateRecentFind(ore2, count);
     });
 
     updateCounters();
-    updateUI();
+    requestUIUpdate();
     draw();
 }
 
@@ -1869,7 +1872,26 @@ function canAfford(cost) {
 function spendCost(cost) {
     for (let o in cost) inventory[o] -= cost[o];
 }
+let discoveredOres = new Set(Object.keys(inventory));
+let lastInventoryUpdate = 0;
+const INVENTORY_UPDATE_INTERVAL = 60000; // 1 minute
+function requestUIUpdate(force = false) {
+    const now = Date.now();
 
+    // Only update if:
+    // 1) Forced
+    // 2) 1 minute passed
+    if (!force && now - lastInventoryUpdate < INVENTORY_UPDATE_INTERVAL) {
+        return;
+    }
+
+    lastInventoryUpdate = now;
+
+    requestAnimationFrame(() => {
+        updateUI();
+        updateCounters();
+    });
+}
 	function updateUI() {
     const invDiv = document.getElementById("inventory");
     const search = document.getElementById("oreSearch").value.toLowerCase().trim();
