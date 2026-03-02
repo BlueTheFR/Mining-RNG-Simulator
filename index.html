@@ -1993,34 +1993,27 @@ if (searchInput) {
 
     indexDiv.innerHTML = "";
 
-    // gather all cave ores (blocks + exclusive ores) once
+    // gather all cave ores (blocks + exclusive ores)
     const allCaveOres = Object.values(caveTypes).flatMap(cave =>
         [...cave.caveBlocks, ...cave.exclusiveOres].map(x => x.toLowerCase())
     );
 
-    // declare discoveredOres once
-    let discoveredOres = allOres.filter(ore => {
+    // clear the set
+    discoveredOres.clear();
+
+    // filter and add matching ores to discoveredOres
+    allOres.forEach(ore => {
         const r = oreData[ore];
 
-        // name match
         const nameMatch = ore.toLowerCase().includes(search);
-
-        // rarity match
         const rarityMatch = r.rarity.toLowerCase().includes(search);
-
-        // event match
-        const eventMatch = r.event && (
-            search === "event" || search === r.event.toLowerCase()
-        );
-
-        // cave match
+        const eventMatch = r.event && (search === "event" || search === r.event.toLowerCase());
         const caveMatch = allCaveOres.includes(ore.toLowerCase()) && search === "cave";
-
-        // normal = not in any cave and not an event
         const normalMatch = search === "normal" && !r.event && !allCaveOres.includes(ore.toLowerCase());
 
-        // keep ore if any match
-        return nameMatch || rarityMatch || eventMatch || caveMatch || normalMatch;
+        if (nameMatch || rarityMatch || eventMatch || caveMatch || normalMatch) {
+            discoveredOres.add(ore);
+        }
     });
 
     // display filtered ores
