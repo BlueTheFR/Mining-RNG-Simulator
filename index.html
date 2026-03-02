@@ -2024,9 +2024,9 @@ if (searchInput) {
         indexDiv.appendChild(div);
     });
 }
-    const discoveredOres = filteredOres.filter(
-        ore => (inventory[ore] || 0) > 0
-    ).length;
+discoveredOres = filteredOres.filter(
+    ore => (inventory[ore] || 0) > 0
+).length;
 
     indexDiv.innerHTML = `<h3>Ore Index (${discoveredOres} / ${filteredOres.length})</h3>`;
 
