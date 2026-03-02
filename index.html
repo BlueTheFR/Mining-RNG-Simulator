@@ -1990,7 +1990,6 @@ if (searchInput) {
     const search = document.getElementById("oreSearch").value.toLowerCase().trim();
 
     const allOres = Object.keys(oreData);
-
     indexDiv.innerHTML = "";
 
     // gather all cave ores (blocks + exclusive ores)
@@ -1998,11 +1997,11 @@ if (searchInput) {
         [...cave.caveBlocks, ...cave.exclusiveOres].map(x => x.toLowerCase())
     );
 
-    // clear the set
+    // clear the global set
     discoveredOres.clear();
 
-    // filter and add matching ores to discoveredOres
-    allOres.forEach(ore => {
+    // filter ores based on search
+    const filteredOres = allOres.filter(ore => {
         const r = oreData[ore];
 
         const nameMatch = ore.toLowerCase().includes(search);
@@ -2013,70 +2012,64 @@ if (searchInput) {
 
         if (nameMatch || rarityMatch || eventMatch || caveMatch || normalMatch) {
             discoveredOres.add(ore);
+            return true; // keep in filteredOres
         }
+        return false; // skip
     });
 
-    // display filtered ores
-    discoveredOres.forEach(ore => {
-        const r = oreData[ore];
-        const div = document.createElement("div");
-        div.textContent = `${ore} (${r.rarity})`;
-        indexDiv.appendChild(div);
-    });
-}
-discoveredOres = filteredOres.filter(
-    ore => (inventory[ore] || 0) > 0
-).length;
+    // count discovered ores in inventory
+    const discoveredCount = filteredOres.filter(
+        ore => (inventory[ore] || 0) > 0
+    ).length;
 
-    indexDiv.innerHTML = `<h3>Ore Index (${discoveredOres} / ${filteredOres.length})</h3>`;
+    // header
+    indexDiv.innerHTML = `<h3>Ore Index (${discoveredCount} / ${filteredOres.length})</h3>`;
 
+    // sort and display
     filteredOres
-    .sort((a, b) =>
-        sortRarestFirst
-            ? oreData[b].exact - oreData[a].exact
-            : oreData[a].exact - oreData[b].exact
-    )
-    .forEach(ore => {
+        .sort((a, b) =>
+            sortRarestFirst
+                ? oreData[b].exact - oreData[a].exact
+                : oreData[a].exact - oreData[b].exact
+        )
+        .forEach(ore => {
+            const r = oreData[ore];
+            const owned = (inventory[ore] || 0) > 0;
 
-        const r = oreData[ore];
-        const owned = (inventory[ore] || 0) > 0;
+            const div = document.createElement("div");
+            div.style.color = owned ? "lime" : "red";
+            div.style.fontSize = "13px";
+            div.style.padding = "2px 4px";
+            div.style.marginBottom = "1px";
+            div.style.cursor = "pointer";
 
-        const div = document.createElement("div");
-        div.style.color = owned ? "lime" : "red";
-        div.style.fontSize = "13px";
-        div.style.padding = "2px 4px";
-        div.style.marginBottom = "1px";
-        div.style.cursor = "pointer";
+            let eventTag = "";
+            if (r.event) {
+                const eventColors = {
+                    space: "#9c27ff",
+                    ocean: "#00bfff",
+                    fire: "#ff5722",
+                    computer: "#00ffcc",
+                    nuclear: "#7fff00",
+                    evolie: "#cfa26b",
+                    mlp: "#ff66cc",
+                    terraria: "#66bb6a"
+                };
 
-        let eventTag = "";
+                eventTag = `
+                    <span style="
+                        color:${eventColors[r.event] || "#ffffff"};
+                        font-weight:bold;
+                        margin-left:6px;
+                    ">
+                        [${r.event.toUpperCase()}]
+                    </span>
+                `;
+            }
 
-        if (r.event) {
-            const eventColors = {
-                space: "#9c27ff",
-                ocean: "#00bfff",
-                fire: "#ff5722",
-                computer: "#00ffcc",
-                nuclear: "#7fff00",
-                evolie: "#cfa26b",
-                mlp: "#ff66cc",
-                terraria: "#66bb6a"
-            };
-
-            eventTag = `
-                <span style="
-                    color:${eventColors[r.event] || "#ffffff"};
-                    font-weight:bold;
-                    margin-left:6px;
-                ">
-                    [${r.event.toUpperCase()}]
-                </span>
-            `;
-        }
-
-        div.innerHTML = `${ore} (${r.rarity}) - 1 in ${formatNumber(r.exact)}${eventTag}`;
-
-        indexDiv.appendChild(div);
-    });
+            div.innerHTML = `${ore} (${r.rarity}) - 1 in ${formatNumber(r.exact)}${eventTag}`;
+            indexDiv.appendChild(div);
+        });
 }
 	
 // PICKAXE BUTTON
