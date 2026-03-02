@@ -1390,7 +1390,7 @@ const gearData = {
 	T7:{desc: "Give +35 Luck and increases high-tier ore spawn chance by 1% per mined block (stacks to 500%). Resets on 10M+ ore drop.",cost: {Hyperion:1, TwilightGem:1, Astralite:5, EmberPhantom:10},highTierStack: 0, maxStack: 500},
 	T8:{desc: "+50 Luck bonus. 1% chance to multiply mined ores <100K by 100×", cost: { Stone: 10000000, Iron: 2000000, OblivionCore: 1 }},
 	T9:{desc: "+75 Luck bonus. 20% chance to upgrade a mined ore by 1 rarity tier",cost: {Quantumite: 20,FrostWraith: 100,FrostShard: 2}},
-	T10: {desc: "Final Gear +100 Luck. When mining a 50M+ ore: 50% chance to respawn it and another independent 50% chance to upgrade it with no cap.",cost: { Zanacharium: 1,AbyssalSingularity: 2,ZergHunter: 50}},
+	T10: {desc: "Final Gear +100 Luck. When mining a 50M+ ore: 50% chance to respawn it and another independent 50% chance to upgrade it with no cap.",cost: { Infinity: 1,AbyssalSingularity: 20,ZergHunter: 50}},
 };
 
 // Artefacts
@@ -1968,7 +1968,13 @@ function requestUIUpdate(force = false) {
     updateOreIndex();
 }
 
+const searchInput = document.getElementById("oreSearch");
 
+if (searchInput) {
+    searchInput.addEventListener("input", () => {
+        requestUIUpdate(true); // Force immediate refresh when typing
+    });
+}
 
 
 	function updateOreIndex() {
