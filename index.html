@@ -1911,22 +1911,30 @@ function requestUIUpdate(force = false) {
             if (!r || count <= 0) return;
 
             // 🔎 Filtering logic
-           const nameMatch = o.toLowerCase().includes(search);
-const rarityMatch = r.rarity.toLowerCase().includes(search);
+           const searchLower = search.toLowerCase();
 
+// helper: get all cave-exclusive ores
+const allCaveOres = Object.values(caveTypes)
+    .flatMap(cave => cave.exclusiveOres.map(ore => ore.toLowerCase()));
+
+// check for name match
+const nameMatch = o.toLowerCase().includes(searchLower);
+
+// check for rarity match
+const rarityMatch = r.rarity.toLowerCase().includes(searchLower);
+
+// check for event
 const eventMatch = r.event && (
-    search === "event" ||
-    search === r.event.toLowerCase()
+    searchLower === "event" || searchLower === r.event.toLowerCase()
 );
 
-// consider ores with "cave" in rarity as cave-exclusive
-const caveMatch = r.cave || r.rarity.toLowerCase().includes("cave") ? (
-    search === "cave" || (r.cave && search === r.cave.toLowerCase())
-) : false;
+// check for cave match using caveTypes
+const caveMatch = allCaveOres.includes(o.toLowerCase()) && (searchLower === "cave");
 
-// normal is ores that are NOT event and NOT cave
-const normalMatch = search === "normal" && !eventMatch && !caveMatch;
+// normal ores = not event and not in any cave
+const normalMatch = searchLower === "normal" && !r.event && !allCaveOres.includes(o.toLowerCase());
 
+// final filter
 if (
     search &&
     !nameMatch &&
@@ -1934,7 +1942,7 @@ if (
     !eventMatch &&
     !caveMatch &&
     !normalMatch
-) return;
+) return; // skip this ore
 
             // 🎨 Your original styling preserved
             const div = document.createElement("div");
