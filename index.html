@@ -1911,31 +1911,30 @@ function requestUIUpdate(force = false) {
             if (!r || count <= 0) return;
 
             // 🔎 Filtering logic
-            const nameMatch = o.toLowerCase().includes(search);
-            const rarityMatch = r.rarity.toLowerCase().includes(search);
+           const nameMatch = o.toLowerCase().includes(search);
+const rarityMatch = r.rarity.toLowerCase().includes(search);
 
-            const eventMatch = r.event && (
-                search === "event" ||
-                search === r.event.toLowerCase()
-            );
+const eventMatch = r.event && (
+    search === "event" ||
+    search === r.event.toLowerCase()
+);
 
-            const caveMatch = r.cave && (
-                search === "cave" ||
-                search === r.cave.toLowerCase()
-            );
+// consider ores with "cave" in rarity as cave-exclusive
+const caveMatch = r.cave || r.rarity.toLowerCase().includes("cave") ? (
+    search === "cave" || (r.cave && search === r.cave.toLowerCase())
+) : false;
 
-            const normalMatch = search === "normal" &&
-                !r.event &&
-                !r.cave;
+// normal is ores that are NOT event and NOT cave
+const normalMatch = search === "normal" && !eventMatch && !caveMatch;
 
-            if (
-                search &&
-                !nameMatch &&
-                !rarityMatch &&
-                !eventMatch &&
-                !caveMatch &&
-                !normalMatch
-            ) return;
+if (
+    search &&
+    !nameMatch &&
+    !rarityMatch &&
+    !eventMatch &&
+    !caveMatch &&
+    !normalMatch
+) return;
 
             // 🎨 Your original styling preserved
             const div = document.createElement("div");
