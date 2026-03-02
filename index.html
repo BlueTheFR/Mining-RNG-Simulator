@@ -1993,38 +1993,38 @@ if (searchInput) {
 
     indexDiv.innerHTML = "";
 
-    const filteredOres = allOres.filter(ore => {
-        const r = oreData[ore];
-        const searchLower = search;
+    // gather all cave ores (blocks + exclusive ores) once
+    const allCaveOres = Object.values(caveTypes).flatMap(cave =>
+        [...cave.caveBlocks, ...cave.exclusiveOres].map(x => x.toLowerCase())
+    );
 
-        // gather all cave ores (blocks + exclusive ores)
-        const allCaveOres = Object.values(caveTypes).flatMap(cave =>
-            [...cave.caveBlocks, ...cave.exclusiveOres].map(x => x.toLowerCase())
-        );
+    // declare discoveredOres once
+    let discoveredOres = allOres.filter(ore => {
+        const r = oreData[ore];
 
         // name match
-        const nameMatch = ore.toLowerCase().includes(searchLower);
+        const nameMatch = ore.toLowerCase().includes(search);
 
         // rarity match
-        const rarityMatch = r.rarity.toLowerCase().includes(searchLower);
+        const rarityMatch = r.rarity.toLowerCase().includes(search);
 
         // event match
         const eventMatch = r.event && (
-            searchLower === "event" || searchLower === r.event.toLowerCase()
+            search === "event" || search === r.event.toLowerCase()
         );
 
         // cave match
-        const caveMatch = allCaveOres.includes(ore.toLowerCase()) && searchLower === "cave";
+        const caveMatch = allCaveOres.includes(ore.toLowerCase()) && search === "cave";
 
-        // normal match = not event and not in any cave (blocks or exclusive ores)
-        const normalMatch = searchLower === "normal" && !r.event && !allCaveOres.includes(ore.toLowerCase());
+        // normal = not in any cave and not an event
+        const normalMatch = search === "normal" && !r.event && !allCaveOres.includes(ore.toLowerCase());
 
         // keep ore if any match
         return nameMatch || rarityMatch || eventMatch || caveMatch || normalMatch;
     });
 
     // display filtered ores
-    filteredOres.forEach(ore => {
+    discoveredOres.forEach(ore => {
         const r = oreData[ore];
         const div = document.createElement("div");
         div.textContent = `${ore} (${r.rarity})`;
