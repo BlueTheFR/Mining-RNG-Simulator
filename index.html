@@ -1913,25 +1913,26 @@ function requestUIUpdate(force = false) {
             // 🔎 Filtering logic
            const searchLower = search.toLowerCase();
 
-// helper: get all cave-exclusive ores
-const allCaveOres = Object.values(caveTypes)
-    .flatMap(cave => cave.exclusiveOres.map(ore => ore.toLowerCase()));
+// gather all cave ores (blocks + exclusive ores)
+const allCaveOres = Object.values(caveTypes).flatMap(cave =>
+    [...cave.caveBlocks, ...cave.exclusiveOres].map(x => x.toLowerCase())
+);
 
-// check for name match
+// name match
 const nameMatch = o.toLowerCase().includes(searchLower);
 
-// check for rarity match
+// rarity match
 const rarityMatch = r.rarity.toLowerCase().includes(searchLower);
 
-// check for event
+// event match
 const eventMatch = r.event && (
     searchLower === "event" || searchLower === r.event.toLowerCase()
 );
 
-// check for cave match using caveTypes
+// cave match
 const caveMatch = allCaveOres.includes(o.toLowerCase()) && (searchLower === "cave");
 
-// normal ores = not event and not in any cave
+// normal match = not event and not in any cave (blocks or exclusive ores)
 const normalMatch = searchLower === "normal" && !r.event && !allCaveOres.includes(o.toLowerCase());
 
 // final filter
@@ -1994,34 +1995,42 @@ if (searchInput) {
 
     const filteredOres = allOres.filter(ore => {
         const r = oreData[ore];
+        const searchLower = search;
 
-        const nameMatch = ore.toLowerCase().includes(search);
-        const rarityMatch = r.rarity.toLowerCase().includes(search);
+        // gather all cave ores (blocks + exclusive ores)
+        const allCaveOres = Object.values(caveTypes).flatMap(cave =>
+            [...cave.caveBlocks, ...cave.exclusiveOres].map(x => x.toLowerCase())
+        );
 
+        // name match
+        const nameMatch = ore.toLowerCase().includes(searchLower);
+
+        // rarity match
+        const rarityMatch = r.rarity.toLowerCase().includes(searchLower);
+
+        // event match
         const eventMatch = r.event && (
-            search === "event" ||
-            search === r.event.toLowerCase()
+            searchLower === "event" || searchLower === r.event.toLowerCase()
         );
 
-        const caveMatch = r.cave && (
-            search === "cave" ||
-            search === r.cave.toLowerCase()
-        );
+        // cave match
+        const caveMatch = allCaveOres.includes(ore.toLowerCase()) && searchLower === "cave";
 
-        const normalMatch = search === "normal" &&
-            !r.event &&
-            !r.cave;
+        // normal match = not event and not in any cave (blocks or exclusive ores)
+        const normalMatch = searchLower === "normal" && !r.event && !allCaveOres.includes(ore.toLowerCase());
 
-        return (
-            !search ||
-            nameMatch ||
-            rarityMatch ||
-            eventMatch ||
-            caveMatch ||
-            normalMatch
-        );
+        // keep ore if any match
+        return nameMatch || rarityMatch || eventMatch || caveMatch || normalMatch;
     });
 
+    // display filtered ores
+    filteredOres.forEach(ore => {
+        const r = oreData[ore];
+        const div = document.createElement("div");
+        div.textContent = `${ore} (${r.rarity})`;
+        indexDiv.appendChild(div);
+    });
+}
     const discoveredOres = filteredOres.filter(
         ore => (inventory[ore] || 0) > 0
     ).length;
