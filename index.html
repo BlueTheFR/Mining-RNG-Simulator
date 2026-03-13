@@ -1569,8 +1569,8 @@ function randomOre() {
 
         if (elapsed >= 2 && validExclusiveOres.length > 0) {
 
-            // Luck reduced by 50x in caves
-            const caveLuckMultiplier = 1 + (luckArtefactLevel / 50);
+            // Luck reduced by 10x in caves
+            const caveLuckMultiplier = 1 + (luckArtefactLevel / 10);
 
             for (const ore of validExclusiveOres) {
 
