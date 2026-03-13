@@ -1313,7 +1313,7 @@ const oreData = {
 	Umbreonite:{rarity:"Otherworldly",value:171,color:"#111133",symbol:"UM",spawnMsg:"Shadows gather silently as Umbreonite reveals itself!",exact:880000000,event:"evolie"},
 	Leafeostone:{rarity:"Imaginary",value:172,color:"#66cc66",symbol:"LF",spawnMsg:"Nature's energy blossoms as Leafeostone grows instantly!",exact:2400000000,event:"evolie"},
 	Glaceorite:{rarity:"Zenith",value:173,color:"#99ffff",symbol:"GL",spawnMsg:"Absolute zero descends as Glaceorite freezes time itself!",exact:130000000000,event:"evolie"},
-	EternalEvolux:{rarity:"Eternal",value:174,color:"#ffffff",symbol:"EX",spawnMsg:"All evolutionary paths converge as EternalEvolux transcends existence!",exact:12000000000000,event:"evolie"},
+	EternalEvolux:{rarity:"Eternal",value:174,color:"#cccccc",symbol:"EX",spawnMsg:"All evolutionary paths converge as EternalEvolux transcends existence!",exact:12000000000000,event:"evolie"},
 	SpikeGem:{rarity:"Exotic",value:175,color:"#7c4dff",symbol:"SG",spawnMsg:"A small dragon roar echoes as SpikeGem sparkles brightly!",exact:1500000,event:"mlp"},
 	TwilightShard:{rarity:"Exquisite",value:176,color:"#b388ff",symbol:"TS",spawnMsg:"Arcane magic swirls as TwilightShard manifests!",exact:20000000,event:"mlp"},
 	ApplejackCore:{rarity:"Transcendent",value:177,color:"#ff9800",symbol:"AJ",spawnMsg:"Honest strength radiates from ApplejackCore!",exact:56000000,event:"mlp"},
@@ -1321,7 +1321,7 @@ const oreData = {
 	RarityPrism:{rarity:"Unfathomable",value:179,color:"#e1bee7",symbol:"RP",spawnMsg:"Elegant brilliance shines from RarityPrism!",exact:294000000,event:"mlp"},
 	RainbowDashBolt:{rarity:"Otherworldly",value:180,color:"#00e5ff",symbol:"RD",spawnMsg:"A sonic boom cracks the sky as RainbowDashBolt strikes!",exact:800000000,event:"mlp"},
 	FluttershyBloom:{rarity:"Imaginary",value:181,color:"#fff757",symbol:"FB",spawnMsg:"A gentle breeze carries FluttershyBloom into existence...",exact:2500000000,event:"mlp"},
-	CelestiaLight:{rarity:"Zenith",value:182,color:"#ffffff",symbol:"CL",spawnMsg:"Radiant sunlight descends as CelestiaLight shines eternal!",exact:150000000000,event:"mlp"},
+	CelestiaLight:{rarity:"Zenith",value:182,color:"#cccccc",symbol:"CL",spawnMsg:"Radiant sunlight descends as CelestiaLight shines eternal!",exact:150000000000,event:"mlp"},
 	LunarEclipse:{rarity:"Eternal",value:183,color:"#1a237e",symbol:"LE",spawnMsg:"The night sky deepens as LunarEclipse awakens...",exact:50000000000000,event:"mlp"},
 	CobaltShard:{rarity:"Exotic",value:184,color:"#1e88e5",symbol:"CO",spawnMsg:"The jungle trembles as CobaltShard forms!",exact:2500000,event:"terraria"},
 	PalladiumCore:{rarity:"Exquisite",value:185,color:"#ff7043",symbol:"PA",spawnMsg:"A warm glow radiates from PalladiumCore!",exact:20000000,event:"terraria"},
@@ -1489,8 +1489,10 @@ function draw() {
 
 
 function randomOre() {
+
     // ===== Cave World =====
     if (activeCave) {
+
         // Check if cave ended
         if (blocksMined >= caveEndAt) {
             activeCave = null;
@@ -1506,9 +1508,22 @@ function randomOre() {
         const validExclusiveOres = getValidOres(activeCave.exclusiveOres, currentEvent);
 
         if (elapsed >= 2 && validExclusiveOres.length > 0) {
+
+            // Luck reduced by 50x in caves
+            const caveLuckMultiplier = 1 + (luckArtefactLevel / 50);
+
             for (const ore of validExclusiveOres) {
-                if (Math.random() < 1 / oreData[ore].exact) {
-                    if (oreData[ore].spawnMsg) setTimeout(() => tryPlaySpawnSound(ore), 50);
+
+                const data = oreData[ore];
+                let chance = 1 / data.exact;
+
+                // Apply reduced luck only to rare ores
+                if (data.exact >= 1000) {
+                    chance *= caveLuckMultiplier;
+                }
+
+                if (Math.random() < chance) {
+                    if (data.spawnMsg) setTimeout(() => tryPlaySpawnSound(ore), 50);
                     return ore;
                 }
             }
@@ -1516,6 +1531,7 @@ function randomOre() {
 
         // Cave blocks (filtered by current event)
         const validCaveBlocks = getValidOres(activeCave.caveBlocks, currentEvent);
+
         if (validCaveBlocks.length > 0) {
             return validCaveBlocks[Math.floor(Math.random() * validCaveBlocks.length)];
         }
@@ -1523,25 +1539,36 @@ function randomOre() {
         return "Stone";
     }
 
+
     // ===== Normal World =====
-const allOres = Object.keys(oreData).filter(
-    ore => !oreData[ore].rarity.includes("CaveExclusive")
-);
 
-const availableOres = getValidOres(allOres, currentEvent); // ONLY current event
+    const allOres = Object.keys(oreData).filter(
+        ore => !oreData[ore].rarity.includes("CaveExclusive")
+    );
 
-if (!availableOres.length) return "Stone";
-    // Weighted random with luck (only for normal world)
+    const availableOres = getValidOres(allOres, currentEvent);
+
+    if (!availableOres.length) return "Stone";
+
+
+    // Weighted random with luck (normal world)
     const weights = availableOres.map(ore => {
+
         const data = oreData[ore];
         let baseChance = 1 / data.exact;
 
-        // Apply luck only to very rare ores
+        // Apply luck only to rare ores
         if (luckArtefactLevel > 0 && data.exact >= 1000) {
+
             const maxLevel = 60;
             const maxMultiplier = 10;
+
             const scaleFactor =
-                1 + (Math.log10(luckArtefactLevel + 1) / Math.log10(maxLevel + 1)) * (maxMultiplier - 1);
+                1 +
+                (Math.log10(luckArtefactLevel + 1) /
+                    Math.log10(maxLevel + 1)) *
+                (maxMultiplier - 1);
+
             baseChance *= scaleFactor;
         }
 
@@ -1552,11 +1579,17 @@ if (!availableOres.length) return "Stone";
     let random = Math.random() * totalWeight;
 
     for (let i = 0; i < availableOres.length; i++) {
+
         random -= weights[i];
+
         if (random <= 0) {
+
             const selectedOre = availableOres[i];
 
-            if (oreData[selectedOre].exact >= 250000 && oreData[selectedOre].spawnMsg) {
+            if (
+                oreData[selectedOre].exact >= 250000 &&
+                oreData[selectedOre].spawnMsg
+            ) {
                 setTimeout(() => tryPlaySpawnSound(selectedOre), 50);
             }
 
