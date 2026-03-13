@@ -1567,27 +1567,28 @@ function randomOre() {
         // Exclusive ores (filtered by current event)
         const validExclusiveOres = getValidOres(activeCave.exclusiveOres, currentEvent);
 
-        if (elapsed >= 2 && validExclusiveOres.length > 0) {
+       if (elapsed >= 2 && validExclusiveOres.length > 0) {
 
-            // Luck reduced by 10x in caves
-            const caveLuckMultiplier = 1 + (luckArtefactLevel / 10);
+    // Full total luck multiplier (artefact + gear + pickaxe)
+    let totalLuck = 1 + (luckArtefactLevel || 0);  // artefact luck
+    totalLuck *= luckMultiplier || 1;              // gear + pickaxe luck
 
-            for (const ore of validExclusiveOres) {
+    // Reduce total luck in caves (example: 1000×)
+    totalLuck = 1 + (totalLuck - 1) / 1000;
 
-                const data = oreData[ore];
-                let chance = 1 / data.exact;
+    for (const ore of validExclusiveOres) {
+        const data = oreData[ore];
+        let chance = 1 / data.exact;
 
-                // Apply reduced luck only to rare ores
-                if (data.exact >= 1000) {
-                    chance *= caveLuckMultiplier;
-                }
+        // Apply the reduced total luck
+        chance *= totalLuck;
 
-                if (Math.random() < chance) {
-                    if (data.spawnMsg) setTimeout(() => tryPlaySpawnSound(ore), 50);
-                    return ore;
-                }
-            }
+        if (Math.random() < chance) {
+            if (data.spawnMsg) setTimeout(() => tryPlaySpawnSound(ore), 50);
+            return ore;
         }
+    }
+}
 
         // Cave blocks (filtered by current event)
         const validCaveBlocks = getValidOres(activeCave.caveBlocks, currentEvent);
@@ -1815,15 +1816,29 @@ if (activeCave && activeCave.caveBlocks.includes(ore2)) {
     const exclusiveOres = activeCave.exclusiveOres;
     let chosenOre = null;
 
-    // Try each exclusive ore independently
+    // Total luck multiplier from pickaxe + gear
+    let totalLuckMultiplier = luckMultiplier || 1; // luckMultiplier already includes gear+pickaxe from above
+
+    // Try each exclusive ore independently with luck applied
     for (const ore of exclusiveOres) {
-        if (Math.random() < 1 / oreData[ore].exact) {
+        const data = oreData[ore];
+        let chance = 1 / data.exact;
+
+        // Apply reduced artefact luck for rare ores
+        if (data.exact >= 1000) {
+            chance *= (1 + luckArtefactLevel / 10);
+        }
+
+        // Apply gear/pickaxe luck multiplier
+        chance *= totalLuckMultiplier;
+
+        if (Math.random() < chance) {
             chosenOre = ore;
             break;
         }
     }
 
-    // Fallback: if no rare ore, pick a common cave block
+    // Fallback: if no rare ore, pick a common cave block randomly
     if (!chosenOre) {
         chosenOre = activeCave.caveBlocks[
             Math.floor(Math.random() * activeCave.caveBlocks.length)
