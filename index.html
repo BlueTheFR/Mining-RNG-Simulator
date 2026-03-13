@@ -69,32 +69,25 @@
             border-radius: 8px;
         }
 
-        /* Buttons styling */
-        button {
-            width: 100%;
-            margin-top: 4px;
-            padding: 6px;
-            background: #333;
-            color: white;
-            border: none;
-            cursor: pointer;
-            border-radius: 4px;
-        }
+        /* Save/Export/Import button panel */
+#saveReset {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    display: flex;               /* horizontal layout */
+    flex-wrap: wrap;             /* allow multiple rows */
+    gap: 8px;                    /* space between buttons */
+    z-index: 50;
+	flex-direction: column; /* row of buttons */
+}
 
-        button:hover {
-            background: #444;
-        }
+/* Buttons styling */ button { width: 100%; margin-top: 4px; padding: 6px; background: #333; color: white; border: none; cursor: pointer; border-radius: 4px; }
+/* Hover effect */
+#saveReset button:hover {
+    background: #444;
+    border-color: #888;
+}
 
-        /* Save/Reset buttons */
-       #saveReset {
-		position: absolute;
-		top: 10px;
-		left: 10px;
-		display: flex;
-		flex-direction: column; /* stack rows vertically */
-		gap: 10px;
-		z-index: 50;
-	}
 
 
         #recentFind {
@@ -180,7 +173,7 @@
         }
 		.button-row {
 		display: flex;
-		gap: 10px;       /* space between buttons */
+		gap: 8px;       /* space between buttons */
 		}
 
 
@@ -305,6 +298,7 @@
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }
+
 /* =========================
    📱 MOBILE FIX (NO PC CHANGES)
    ========================= */
@@ -452,8 +446,9 @@
     <!-- First row -->
     <div class="button-row">
         <button onclick="saveGame()">Save</button>
+		<button onclick="exportSave()">Export Save</button>
+		<button onclick="importSave()">Import Save</button>
         <button id="sortToggle" onclick="toggleSort()">Sort: Common → Rarest</button>
-        <button id="compactToggle" onclick="toggleCompact()">Compact: Off</button>
     </div>
 
     <!-- Second row -->
@@ -461,6 +456,7 @@
         <button id="volumeToggle" onclick="toggleVolume()">Volume: 100%</button>
         <button id="spawnFilterToggle" onclick="toggleSpawnFilter()">Spawn Filter: Exotic+</button>
         <button id="spawnToggle" onclick="toggleSpawn()">Spawn Messages: On</button>
+		<button id="compactToggle" onclick="toggleCompact()">Compact: Off</button>
     </div>
 </div>
 <div id="caveInfoBox" style="
@@ -652,6 +648,70 @@ function rotateEvent() {
     }
 
     eventBox.innerText = displayNames[currentEvent];
+}
+function exportSave() {
+    const saveData = JSON.stringify({
+        inventory,
+        ownedPickaxes,
+        equippedPickaxe,
+        ownedGears,
+        equippedGears,
+        artefactLevel,
+        luckArtefactLevel,
+        pauseOnChill,
+        waitingForManualHighOre,
+        currentVolumeIndex
+    }, null, 2); // pretty-print JSON
+
+    const blob = new Blob([saveData], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "MiningRNGSimulator_save.json"; // filename
+    a.click();
+
+    URL.revokeObjectURL(url);
+    alert("Save exported!");
+}
+function importSave() {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".json";
+
+    input.onchange = (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const data = JSON.parse(e.target.result);
+
+                // Apply the loaded data
+                inventory = data.inventory || {};
+                ownedPickaxes = data.ownedPickaxes || ["T0"];
+                equippedPickaxe = data.equippedPickaxe || "T0";
+                ownedGears = data.ownedGears || [];
+                equippedGears = data.equippedGears || [];
+                artefactLevel = data.artefactLevel || 0;
+                luckArtefactLevel = data.luckArtefactLevel || 0;
+                pauseOnChill = data.pauseOnChill || false;
+                waitingForManualHighOre = data.waitingForManualHighOre || false;
+                currentVolumeIndex = data.currentVolumeIndex ?? 0;
+
+                sanitizeInventory();
+                updateCaveUI(); // Refresh UI immediately
+                alert("Save imported successfully!");
+            } catch (err) {
+                alert("Invalid save file!");
+                console.error(err);
+            }
+        };
+        reader.readAsText(file);
+    };
+
+    input.click();
 }
 
 const caveTypes = {
