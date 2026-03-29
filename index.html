@@ -611,17 +611,27 @@ function startEventSystem() {
     }, 500);
 }
 const mutations = [
-    { name: "Inverted", chance: 1/100, multi: 100 },
-    { name: "Glitched", chance: 1/500, multi: 500 },
-    { name: "Voidtouched", chance: 1/1000, multi: 1000 },
-    { name: "Celestial", chance: 1/5000, multi: 5000 }
+    { name: "Inverted",    chance: 1/100,       multi: 100       },
+    { name: "Glitched",    chance: 1/500,        multi: 500       },
+    { name: "Voidtouched", chance: 1/1000,       multi: 1000      },
+    { name: "Celestial",   chance: 1/5000,       multi: 5000      },
+    { name: "Fractured",   chance: 1/15000,      multi: 15000     },
+    { name: "Decayed",     chance: 1/50000,      multi: 50000     },
+    { name: "Spectral",    chance: 1/150000,     multi: 150000    },
+    { name: "Primordial",  chance: 1/500000,     multi: 500000    },
+    { name: "Omnipotent",  chance: 1/2000000,    multi: 2000000   }
 ];
 // Plafonds max atteints uniquement avec T10
 const mutationCaps = {
     "Inverted":    1/50,
     "Glitched":    1/250,
     "Voidtouched": 1/500,
-    "Celestial":   1/2500
+    "Celestial":   1/2500,
+    "Fractured":   1/7500,
+    "Decayed":     1/25000,
+    "Spectral":    1/75000,
+    "Primordial":  1/250000,
+    "Omnipotent":  1/1000000
 };
 
 function rollMutation(oreName, pickaxe = "T0") {
@@ -893,11 +903,29 @@ function updateCaveUI() {
 // Helper to format numbers compactly
 	function formatNumber(n) {
 		if (!compactNumbers) return n.toLocaleString();
-		if (n >= 1e15) return (n / 1e15).toFixed(2) + "QD"; // Quadrillion
-		if (n >= 1e12) return (n / 1e12).toFixed(2) + "T";  // Trillion
-		if (n >= 1e9)  return (n / 1e9).toFixed(2) + "B";   // Billion
-		if (n >= 1e6)  return (n / 1e6).toFixed(2) + "M";   // Million
-		if (n >= 1e3)  return (n / 1e3).toFixed(1) + "K";   // Thousand
+		if (n >= 1e303) return (n / 1e303).toFixed(2) + "Ct";  // Centillion
+		if (n >= 1e100) return (n / 1e100).toFixed(2) + "Gg";  // Googol
+		if (n >= 1e63)  return (n / 1e63).toFixed(2)  + "Vi";  // Vigintillion
+		if (n >= 1e60)  return (n / 1e60).toFixed(2)  + "NV";  // Novemdecillion
+		if (n >= 1e57)  return (n / 1e57).toFixed(2)  + "OV";  // Octodecillion
+		if (n >= 1e54)  return (n / 1e54).toFixed(2)  + "SpV"; // Septendecillion
+		if (n >= 1e51)  return (n / 1e51).toFixed(2)  + "SxV"; // Sexdecillion
+		if (n >= 1e48)  return (n / 1e48).toFixed(2)  + "QnV"; // Quindecillion
+		if (n >= 1e45)  return (n / 1e45).toFixed(2)  + "QdV"; // Quattuordecillion
+		if (n >= 1e42)  return (n / 1e42).toFixed(2)  + "TV";  // Tredecillion
+		if (n >= 1e39)  return (n / 1e39).toFixed(2)  + "DV";  // Duodecillion
+		if (n >= 1e36)  return (n / 1e36).toFixed(2)  + "Ud";  // Undecillion
+		if (n >= 1e33)  return (n / 1e33).toFixed(2)  + "Dc";  // Decillion
+		if (n >= 1e30)  return (n / 1e30).toFixed(2)  + "No";  // Nonillion
+		if (n >= 1e27)  return (n / 1e27).toFixed(2)  + "Oc";  // Octillion
+		if (n >= 1e24)  return (n / 1e24).toFixed(2)  + "Sp";  // Septillion
+		if (n >= 1e21)  return (n / 1e21).toFixed(2)  + "Sx";  // Sextillion
+		if (n >= 1e18)  return (n / 1e18).toFixed(2)  + "Qn";  // Quintillion
+		if (n >= 1e15)  return (n / 1e15).toFixed(2)  + "QD";  // Quadrillion
+		if (n >= 1e12)  return (n / 1e12).toFixed(2)  + "T";   // Trillion
+		if (n >= 1e9)   return (n / 1e9).toFixed(2)   + "B";   // Billion
+		if (n >= 1e6)   return (n / 1e6).toFixed(2)   + "M";   // Million
+		if (n >= 1e3)   return (n / 1e3).toFixed(1)   + "K";   // Thousand
 		return n.toString();
 	}
 	function toggleVolume() {
@@ -1149,10 +1177,15 @@ if (
 
 
 const mutationColors = {
-    "Inverted":    "#00ffff",
-    "Glitched":    "#39ff14",
-    "Voidtouched": "#bf00ff",
-    "Celestial":   "#ffd700"
+    "Inverted":    "#00ffff",   // cyan
+    "Glitched":    "#39ff14",   // vert acide
+    "Voidtouched": "#bf00ff",   // violet
+    "Celestial":   "#ffd700",   // or
+    "Fractured":   "#ff4500",   // orange-rouge
+    "Decayed":     "#556b2f",   // olive toxique
+    "Spectral":    "#e0e0ff",   // blanc fantôme
+    "Primordial":  "#ff8c00",   // ambre ancien
+    "Omnipotent":  "#ffffff"    // blanc pur
 };
 
 function updateRecentFind(ore) {
@@ -1901,19 +1934,37 @@ if (activeCave && activeCave.caveBlocks.includes(ore2)) {
         ];
     }
 
-    // Give ore to inventory immediately (with mutation support + pickaxe tier)
+    // Give ore to inventory (with mutation + T10 gear support)
     const caveMutation = rollMutation(chosenOre, equippedPickaxe);
-    let caveFinalKey = chosenOre;
-    if (caveMutation) {
-        caveFinalKey = `${chosenOre} [${caveMutation.name}]`;
+    let caveFinalKey = caveMutation ? `${chosenOre} [${caveMutation.name}]` : chosenOre;
+
+    // T10 gear: 50/50 respawn+upgrade on 50M+ cave exclusives
+    const caveData = oreData[chosenOre];
+    if (equippedGears.includes("T10") && caveData && caveData.exact >= 50000000) {
+        // 50% upgrade: move to next rarity tier (same mutation preserved)
+        if (Math.random() < 0.5) {
+            const idx = rarityOrder.indexOf(caveData.rarity);
+            if (idx >= 0 && idx < rarityOrder.length - 1) {
+                const next = rarityOrder[idx + 1];
+                const candidates = getEventSafeOres().filter(o => oreData[o].rarity === next);
+                if (candidates.length > 0) {
+                    const upgraded = candidates[Math.floor(Math.random() * candidates.length)];
+                    caveFinalKey = caveMutation ? `${upgraded} [${caveMutation.name}]` : upgraded;
+                }
+            }
+        }
+        // 50% respawn: put base ore back on grid so it can be mined again
+        if (Math.random() < 0.5) {
+            grid[ty][tx] = chosenOre;
+        } else {
+            grid[ty][tx] = activeCave.caveBlocks[Math.floor(Math.random() * activeCave.caveBlocks.length)];
+        }
+    } else {
+        grid[ty][tx] = activeCave.caveBlocks[Math.floor(Math.random() * activeCave.caveBlocks.length)];
     }
+
     inventory[caveFinalKey] = (inventory[caveFinalKey] || 0) + 1;
     updateRecentFind(caveFinalKey, 1);
-
-    // Replace the grid block with a normal cave block
-    grid[ty][tx] = activeCave.caveBlocks[
-        Math.floor(Math.random() * activeCave.caveBlocks.length)
-    ];
 
     return; // skip normal ore logic
 }
@@ -1986,25 +2037,38 @@ if (activeCave && activeCave.caveBlocks.includes(ore2)) {
             t9UpgradeApplied = true;
         }
 
+	// Roll mutation BEFORE T10 gear so it can be preserved
+	const mutation = rollMutation(ore2, equippedPickaxe);
+
         if (equippedGears.includes("T10") && data2.exact >= 50000000) {
+            // 50% chance to upgrade the ore
             if (Math.random() < 0.5) {
                 const idx = rarityOrder.indexOf(data2.rarity);
                 if (idx >= 0 && idx < rarityOrder.length - 1) {
                     const next = rarityOrder[idx + 1];
-					const candidates = getEventSafeOres().filter(o => oreData[o].rarity === next);                   
+					const candidates = getEventSafeOres().filter(o => oreData[o].rarity === next);
 					if (candidates.length > 0) ore2 = candidates[Math.floor(Math.random()*candidates.length)];
                     console.log("T10 Gear: 50M+ Ore Upgraded!");
                 }
             }
-            if (Math.random() < 0.5) grid[ty][tx] = ore2;
-            else grid[ty][tx] = randomOre();
+            // 50% chance to respawn it (with same mutation if any)
+            if (Math.random() < 0.5) {
+                // Respawn preserves mutation: put base ore back on grid
+                grid[ty][tx] = ore2;
+                // Also give the mutated version to inventory as bonus
+                if (mutation) {
+                    const respawnKey = `${ore2} [${mutation.name}]`;
+                    inventory[respawnKey] = (inventory[respawnKey] || 0) + 1;
+                    updateRecentFind(respawnKey, 1);
+                }
+            } else {
+                grid[ty][tx] = randomOre();
+            }
         } else {
             grid[ty][tx] = randomOre();
         }
-	// Roll mutation (boosted par tier de pioche T7→T10)
-	const mutation = rollMutation(ore2, equippedPickaxe);
 
-	// Build final key + rarity
+	// Build final key preserving the mutation
 	let finalKey = ore2;
 	let finalExact = oreData[ore2].exact;
 
@@ -2080,22 +2144,27 @@ function spendCost(cost) {
 let discoveredOres = new Set(Object.keys(inventory));
 let lastInventoryUpdate = 0;
 const INVENTORY_UPDATE_INTERVAL = 60000; // 1 minute
+let lastUIBlocksMined = 0;
+
 function requestUIUpdate(force = false) {
     const now = Date.now();
+    const search = document.getElementById("oreSearch").value.trim();
 
-    // Only update if:
-    // 1) Forced
-    // 2) 1 minute passed
-    if (!force && now - lastInventoryUpdate < INVENTORY_UPDATE_INTERVAL) {
+    // If search is active: only update when a new block has been mined (no lag)
+    if (search && !force) {
+        if (blocksMined === lastUIBlocksMined) return;
+        lastUIBlocksMined = blocksMined;
+        lastInventoryUpdate = now;
+        requestAnimationFrame(() => { updateUI(); updateCounters(); });
         return;
     }
 
-    lastInventoryUpdate = now;
+    // No search: normal 1-minute throttle
+    if (!force && now - lastInventoryUpdate < INVENTORY_UPDATE_INTERVAL) return;
 
-    requestAnimationFrame(() => {
-        updateUI();
-        updateCounters();
-    });
+    lastInventoryUpdate = now;
+    lastUIBlocksMined = blocksMined;
+    requestAnimationFrame(() => { updateUI(); updateCounters(); });
 }
 	function updateUI() {
     const invDiv = document.getElementById("inventory");
@@ -2216,7 +2285,7 @@ function getOreDataSafe(oreName) {
 }
 
 // Ore Index mutation cycle
-const mutationCycleStates = ["Normal", "Inverted", "Glitched", "Voidtouched", "Celestial"];
+const mutationCycleStates = ["Normal", "Inverted", "Glitched", "Voidtouched", "Celestial", "Fractured", "Decayed", "Spectral", "Primordial", "Omnipotent"];
 let oreIndexMutationFilter = "Normal";
 
 function cycleOreIndexMutation() {
