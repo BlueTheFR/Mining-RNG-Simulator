@@ -516,7 +516,7 @@ style="
     <!-- Bottom panels -->
     <div id="bottomPanels">
         <div id="oreIndex">
-            <h3>Ore Index</h3>
+        <h3>Ore Index</h3>
         </div>
         <div id="inventory">
             <h3>Inventory</h3>
@@ -610,7 +610,38 @@ function startEventSystem() {
         }, 300000); // 300000ms = 5min
     }, 500);
 }
+const mutations = [
+    { name: "Inverted", chance: 1/100, multi: 100 },
+    { name: "Glitched", chance: 1/500, multi: 500 },
+    { name: "Voidtouched", chance: 1/1000, multi: 1000 },
+    { name: "Celestial", chance: 1/5000, multi: 5000 }
+];
+// Plafonds max atteints uniquement avec T10
+const mutationCaps = {
+    "Inverted":    1/50,
+    "Glitched":    1/250,
+    "Voidtouched": 1/500,
+    "Celestial":   1/2500
+};
 
+function rollMutation(oreName, pickaxe = "T0") {
+    const data = oreData[oreName];
+    if (!data) return null;
+
+    // Scale T7→T10 : T7 = 0% bonus, T10 = 100% du bonus (plafond)
+    const pickaxeTiers = { "T7": 0, "T8": 0.33, "T9": 0.66, "T10": 1.0 };
+    const scale = pickaxeTiers[pickaxe] ?? 0; // avant T7 = 0
+
+    for (let mut of mutations) {
+        const cap = mutationCaps[mut.name] || mut.chance;
+        const boostedChance = mut.chance + (cap - mut.chance) * scale;
+        if (Math.random() < boostedChance) {
+            return mut;
+        }
+    }
+
+    return null;
+}
 function rotateEvent() {
     let newEvent;
     do {
@@ -1117,17 +1148,35 @@ if (
 }
 
 
-function updateRecentFind(ore) {
-    const data = oreData[ore];
+const mutationColors = {
+    "Inverted":    "#00ffff",
+    "Glitched":    "#39ff14",
+    "Voidtouched": "#bf00ff",
+    "Celestial":   "#ffd700"
+};
 
-    if (data.exact < 250000) return; // only rare/high-tier ores
+function updateRecentFind(ore) {
+    const baseName = ore.split(" [")[0];
+    const mutName = ore.includes(" [") ? ore.replace(/^.*\[(.+)\]$/, "$1") : null;
+    const data = oreData[baseName] || oreData[ore];
+    if (!data) return;
+
+    const mut = mutName ? mutations.find(m => m.name === mutName) : null;
+    const effectiveExact = mut ? data.exact * mut.multi : data.exact;
+
+    // Seuil 250k sur la valeur effective (avec ou sans mutation)
+    if (effectiveExact < 250000) return;
+
+    const mc = mutName ? (mutationColors[mutName] || "#ff00ff") : null;
 
     recentFinds.unshift({
-        name: ore,
+        baseName,
         rarity: data.rarity,
-        exact: data.exact,
+        exact: effectiveExact,
         color: data.color,
-        symbol: data.symbol || ""
+        symbol: data.symbol || "",
+        mutName,
+        mc
     });
 
     recentFinds = recentFinds.slice(0, 5);
@@ -1149,20 +1198,27 @@ function updateRecentFind(ore) {
         box.style.alignItems = "center";
         box.style.justifyContent = "center";
         box.style.fontWeight = "bold";
+        box.style.flexShrink = "0";
 
-        if (oreImages[f.name]) {
-            const img = oreImages[f.name].cloneNode(); // clone so multiple uses don’t interfere
+        if (oreImages[f.baseName]) {
+            const img = oreImages[f.baseName].cloneNode();
             img.style.width = "24px";
             img.style.height = "24px";
+            if (f.mc) img.style.outline = `2px solid ${f.mc}`;
             box.appendChild(img);
         } else {
             box.style.background = f.color;
             box.style.color = "#fff";
+            if (f.mc) box.style.outline = `2px solid ${f.mc}`;
             box.innerText = f.symbol;
         }
 
+        const mutLabel = f.mc
+            ? ` <span style="color:${f.mc};font-weight:bold">[${f.mutName}]</span>`
+            : "";
+
         const text = document.createElement("div");
-        text.innerText = `${f.name} (${f.rarity}) - 1 in ${formatNumber(f.exact)}`;
+        text.innerHTML = `${f.baseName}${mutLabel} (${f.rarity}) - 1 in ${formatNumber(f.exact)}`;
         text.style.fontSize = "14px";
         text.style.flex = "1";
 
@@ -1845,9 +1901,14 @@ if (activeCave && activeCave.caveBlocks.includes(ore2)) {
         ];
     }
 
-    // Give ore to inventory immediately
-    inventory[chosenOre] = (inventory[chosenOre] || 0) + 1;
-    updateRecentFind(chosenOre, 1);
+    // Give ore to inventory immediately (with mutation support + pickaxe tier)
+    const caveMutation = rollMutation(chosenOre, equippedPickaxe);
+    let caveFinalKey = chosenOre;
+    if (caveMutation) {
+        caveFinalKey = `${chosenOre} [${caveMutation.name}]`;
+    }
+    inventory[caveFinalKey] = (inventory[caveFinalKey] || 0) + 1;
+    updateRecentFind(caveFinalKey, 1);
 
     // Replace the grid block with a normal cave block
     grid[ty][tx] = activeCave.caveBlocks[
@@ -1940,17 +2001,29 @@ if (activeCave && activeCave.caveBlocks.includes(ore2)) {
         } else {
             grid[ty][tx] = randomOre();
         }
+	// Roll mutation (boosted par tier de pioche T7→T10)
+	const mutation = rollMutation(ore2, equippedPickaxe);
 
-        // Add normal ore to inventory
-        const isNewOre = !(ore2 in inventory);
+	// Build final key + rarity
+	let finalKey = ore2;
+	let finalExact = oreData[ore2].exact;
 
-inventory[ore2] = (inventory[ore2] || 0) + count;
+	if (mutation) {
+		finalKey = `${ore2} [${mutation.name}]`;
+		finalExact = finalExact * mutation.multi;
+	}
+
+	// Check if new ore (AFTER mutation!)
+	const isNewOre = !(finalKey in inventory);
+
+	// Add to inventory
+	inventory[finalKey] = (inventory[finalKey] || 0) + count;
 
 if (isNewOre) {
     discoveredOres.add(ore2);
     requestUIUpdate(true); // Force update immediately
 }
-        updateRecentFind(ore2, count);
+        updateRecentFind(finalKey, count);
     });
 
     updateCounters();
@@ -1966,14 +2039,23 @@ if (isNewOre) {
 
     for (let ore in inventory) {
         const count = inventory[ore] || 0;
-		totalBlocksMined += count;
-		if (oreData[ore].exact >= 100000000) globalBlocksMined += count;
+        totalBlocksMined += count;
+
+        const data = getOreDataSafe(ore);
+        if (!data) continue; // ✅ IMPORTANT: not return
+
+        if (data.exact >= 100000000) {
+            globalBlocksMined += count;
+        }
     }
 
-    document.getElementById("totalMined").innerText = `Total Mined: ${formatNumber(totalBlocksMined)}`;
-    document.getElementById("globalMined").innerText = `Global Mined: ${formatNumber(globalBlocksMined)}`;
-}
+    // ✅ Move UI update OUTSIDE the loop
+    document.getElementById("totalMined").innerText =
+        `Total Mined: ${formatNumber(totalBlocksMined)}`;
 
+    document.getElementById("globalMined").innerText =
+        `Global Mined: ${formatNumber(globalBlocksMined)}`;
+}
 
 // Auto-Miner
 function startArtefact(){
@@ -2022,62 +2104,82 @@ function requestUIUpdate(force = false) {
     invDiv.innerHTML = "";
 
     Object.keys(inventory)
-        .sort((a, b) =>
-            sortRarestFirst
-                ? oreData[b].exact - oreData[a].exact
-                : oreData[a].exact - oreData[b].exact
-        )
-        .forEach(o => {
+    .sort((a, b) => {
+        const dataA = getOreDataSafe(a);
+        const dataB = getOreDataSafe(b);
 
-            const r = oreData[o];
+        const exactA = dataA ? dataA.exact : 0;
+        const exactB = dataB ? dataB.exact : 0;
+
+        return sortRarestFirst
+            ? exactB - exactA
+            : exactA - exactB;
+		})
+        .forEach(o => {
+            // Support mutated keys like "Stone [Inverted]"
+            const baseName = o.split(" [")[0];
+            const mutTag = o.includes(" [") ? o.slice(o.indexOf(" [") + 2, -1) : null; // e.g. "Inverted"
+            const r = oreData[baseName] || oreData[o];
             const count = inventory[o] || 0;
             if (!r || count <= 0) return;
 
             // 🔎 Filtering logic
-           const searchLower = search.toLowerCase();
+            const searchLower = search.toLowerCase();
 
-// gather all cave ores (blocks + exclusive ores)
-const allCaveOres = Object.values(caveTypes).flatMap(cave =>
-    [...cave.caveBlocks, ...cave.exclusiveOres].map(x => x.toLowerCase())
-);
+            // gather all cave ores (blocks + exclusive ores)
+            const allCaveOres = Object.values(caveTypes).flatMap(cave =>
+                [...cave.caveBlocks, ...cave.exclusiveOres].map(x => x.toLowerCase())
+            );
 
-// name match
-const nameMatch = o.toLowerCase().includes(searchLower);
+            // name match (includes mutation tag in key)
+            const nameMatch = o.toLowerCase().includes(searchLower);
 
-// rarity match
-const rarityMatch = r.rarity.toLowerCase().includes(searchLower);
+            // rarity match
+            const rarityMatch = r.rarity.toLowerCase().includes(searchLower);
 
-// event match
-const eventMatch = r.event && (
-    searchLower === "event" || searchLower === r.event.toLowerCase()
-);
+            // event match
+            const eventMatch = r.event && (
+                searchLower === "event" || searchLower === r.event.toLowerCase()
+            );
 
-// cave match
-const caveMatch = allCaveOres.includes(o.toLowerCase()) && (searchLower === "cave");
+            // cave match
+            const caveMatch = allCaveOres.includes(baseName.toLowerCase()) && (searchLower === "cave");
 
-// normal match = not event and not in any cave (blocks or exclusive ores)
-const normalMatch = searchLower === "normal" && !r.event && !allCaveOres.includes(o.toLowerCase());
+            // normal match = not event and not in any cave
+            const normalMatch = searchLower === "normal" && !r.event && !allCaveOres.includes(baseName.toLowerCase()) && !mutTag;
 
-// final filter
-if (
-    search &&
-    !nameMatch &&
-    !rarityMatch &&
-    !eventMatch &&
-    !caveMatch &&
-    !normalMatch
-) return; // skip this ore
+            // mutation match: "mutations" shows all mutated, or specific mutation name
+            const mutationMatch = mutTag && (
+                searchLower === "mutations" ||
+                searchLower === "mutation" ||
+                mutTag.toLowerCase().includes(searchLower)
+            );
 
-            // 🎨 Your original styling preserved
+            // final filter
+            if (
+                search &&
+                !nameMatch &&
+                !rarityMatch &&
+                !eventMatch &&
+                !caveMatch &&
+                !normalMatch &&
+                !mutationMatch
+            ) return;
+
+            // 🎨 Styling — mutated ores get a colored border per mutation
             const div = document.createElement("div");
             div.style.cursor = "pointer";
             div.style.background = r.color;
             div.style.color = r.symbolColor || "#fff";
-            div.style.border = "2px solid #000";
+            const mc = mutTag ? (mutationColors[mutTag] || "#ff00ff") : null;
+            div.style.border = mc ? `2px solid ${mc}` : "2px solid #000";
             div.style.padding = "2px";
             div.style.marginBottom = "2px";
 
-            div.innerHTML = `${o} (${r.rarity}) - ${formatNumber(count)}`;
+            const mutLabel = mc
+                ? ` <span style="color:${mc};font-weight:bold">[${mutTag}]</span>`
+                : "";
+            div.innerHTML = `${baseName}${mutLabel} (${r.rarity}) - ${formatNumber(count)}`;
 
             div.onclick = () => showOreViewer(o);
 
@@ -2106,93 +2208,144 @@ if (searchInput) {
         requestUIUpdate(true); // Force immediate refresh when typing
     });
 }
+function getOreDataSafe(oreName) {
+    if (oreData[oreName]) return oreData[oreName];
 
+    const base = oreName.split(" [")[0];
+    return oreData[base];
+}
 
-	function updateOreIndex() {
+// Ore Index mutation cycle
+const mutationCycleStates = ["Normal", "Inverted", "Glitched", "Voidtouched", "Celestial"];
+let oreIndexMutationFilter = "Normal";
+
+function cycleOreIndexMutation() {
+    const idx = mutationCycleStates.indexOf(oreIndexMutationFilter);
+    oreIndexMutationFilter = mutationCycleStates[(idx + 1) % mutationCycleStates.length];
+    updateOreIndex();
+}
+
+function updateOreIndex() {
     const indexDiv = document.getElementById("oreIndex");
     const search = document.getElementById("oreSearch").value.toLowerCase().trim();
-
     const allOres = Object.keys(oreData);
     indexDiv.innerHTML = "";
 
-    // gather all cave ores (blocks + exclusive ores)
     const allCaveOres = Object.values(caveTypes).flatMap(cave =>
         [...cave.caveBlocks, ...cave.exclusiveOres].map(x => x.toLowerCase())
     );
-
-    // clear the global set
     discoveredOres.clear();
 
-    // filter ores based on search
+    // ── Détecte si la recherche cible une mutation ──
+    const mutationNames = mutations.map(m => m.name.toLowerCase());
+    const specificMut = mutations.find(m =>
+        search.length >= 3 && m.name.toLowerCase().startsWith(search)
+    );
+    const isMutationSearch = search === "mutations" || search === "mutation" || !!specificMut;
+
+    // ── MODE RECHERCHE MUTATION ──
+    if (isMutationSearch) {
+        const targetMuts = specificMut ? [specificMut] : mutations;
+
+        // Précompute toutes les clés possédées
+        const ownedKeys = new Set(
+            Object.keys(inventory).filter(k => (inventory[k] || 0) > 0)
+        );
+
+        const rows = [];
+        let ownedCount = 0;
+
+        allOres.forEach(ore => {
+            const r = oreData[ore];
+            targetMuts.forEach(mut => {
+                const key = `${ore} [${mut.name}]`;
+                const owned = ownedKeys.has(key);
+                if (owned) ownedCount++;
+                rows.push({ ore, r, mut, mc: mutationColors[mut.name] || "#ff00ff", owned, exact: r.exact * mut.multi });
+            });
+        });
+
+        rows.sort((a, b) => sortRarestFirst ? b.exact - a.exact : a.exact - b.exact);
+
+        indexDiv.innerHTML = `<h3 style="display:inline">Ore Index (${ownedCount} / ${rows.length} mutations)</h3><br>`;
+
+        rows.forEach(({ ore, r, mut, mc, owned, exact }) => {
+            const div = document.createElement("div");
+            div.style.fontSize = "13px";
+            div.style.padding = "2px 4px";
+            div.style.marginBottom = "1px";
+            div.style.color = owned ? "lime" : "red";
+            let eventTag = "";
+            if (r.event) {
+                const ec = { space:"#9c27ff", ocean:"#00bfff", fire:"#ff5722", computer:"#00ffcc", nuclear:"#7fff00", evolie:"#cfa26b", mlp:"#ff66cc", terraria:"#66bb6a" };
+                eventTag = ` <span style="color:${ec[r.event]||"#fff"};font-weight:bold">[${r.event.toUpperCase()}]</span>`;
+            }
+            div.innerHTML = `${ore} <span style="color:${mc};font-weight:bold">[${mut.name}]</span> (${r.rarity}) - 1 in ${formatNumber(exact)}${eventTag}`;
+            indexDiv.appendChild(div);
+        });
+        return;
+    }
+
+    // ── MODE NORMAL / CYCLE MUTATION ──
     const filteredOres = allOres.filter(ore => {
         const r = oreData[ore];
-
         const nameMatch = ore.toLowerCase().includes(search);
         const rarityMatch = r.rarity.toLowerCase().includes(search);
         const eventMatch = r.event && (search === "event" || search === r.event.toLowerCase());
         const caveMatch = allCaveOres.includes(ore.toLowerCase()) && search === "cave";
         const normalMatch = search === "normal" && !r.event && !allCaveOres.includes(ore.toLowerCase());
-
-        if (nameMatch || rarityMatch || eventMatch || caveMatch || normalMatch) {
-            discoveredOres.add(ore);
-            return true; // keep in filteredOres
-        }
-        return false; // skip
+        const keep = !search || nameMatch || rarityMatch || eventMatch || caveMatch || normalMatch;
+        if (keep) discoveredOres.add(ore);
+        return keep;
     });
 
-    // count discovered ores in inventory
-    const discoveredCount = filteredOres.filter(
-        ore => (inventory[ore] || 0) > 0
-    ).length;
+    const activeMut = mutations.find(m => m.name === oreIndexMutationFilter);
+    const activeMc = mutationColors[oreIndexMutationFilter] || "#fff";
 
-    // header
-    indexDiv.innerHTML = `<h3>Ore Index (${discoveredCount} / ${filteredOres.length})</h3>`;
+    // Précompute un Set de toutes les clés possédées pour ce filtre
+    const ownedKeys = new Set(
+        Object.keys(inventory).filter(k => (inventory[k] || 0) > 0)
+    );
+    const invKey = (ore) => activeMut ? `${ore} [${oreIndexMutationFilter}]` : ore;
+    const isOwned = (ore) => ownedKeys.has(invKey(ore));
 
-    // sort and display
-    filteredOres
-        .sort((a, b) =>
-            sortRarestFirst
-                ? oreData[b].exact - oreData[a].exact
-                : oreData[a].exact - oreData[b].exact
-        )
-        .forEach(ore => {
-            const r = oreData[ore];
-            const owned = (inventory[ore] || 0) > 0;
+    const discoveredCount = filteredOres.filter(ore => isOwned(ore)).length;
 
-            const div = document.createElement("div");
-            div.style.color = owned ? "lime" : "red";
-            div.style.fontSize = "13px";
-            div.style.padding = "2px 4px";
-            div.style.marginBottom = "1px";
-            div.style.cursor = "pointer";
+    const cycleColor = activeMut ? activeMc : "#fff";
+    const cycleLabel = `<span style="color:${cycleColor};cursor:pointer;font-size:11px;margin-left:6px" onclick="cycleOreIndexMutation()">[${oreIndexMutationFilter} ▶]</span>`;
+    indexDiv.innerHTML = `<h3 style="display:inline">Ore Index (${discoveredCount} / ${filteredOres.length})</h3>${cycleLabel}<br>`;
 
-            let eventTag = "";
-            if (r.event) {
-                const eventColors = {
-                    space: "#9c27ff",
-                    ocean: "#00bfff",
-                    fire: "#ff5722",
-                    computer: "#00ffcc",
-                    nuclear: "#7fff00",
-                    evolie: "#cfa26b",
-                    mlp: "#ff66cc",
-                    terraria: "#66bb6a"
-                };
+    filteredOres.sort((a, b) => {
+        const dA = getOreDataSafe(a), dB = getOreDataSafe(b);
+        if (!dA || !dB) return 0;
+        return sortRarestFirst ? dB.exact - dA.exact : dA.exact - dB.exact;
+    }).forEach(ore => {
+        const r = oreData[ore];
+        const owned = isOwned(ore);
 
-                eventTag = `
-                    <span style="
-                        color:${eventColors[r.event] || "#ffffff"};
-                        font-weight:bold;
-                        margin-left:6px;
-                    ">
-                        [${r.event.toUpperCase()}]
-                    </span>
-                `;
-            }
+        const div = document.createElement("div");
+        div.style.fontSize = "13px";
+        div.style.padding = "2px 4px";
+        div.style.marginBottom = "1px";
+        div.style.cursor = "pointer";
 
-            div.innerHTML = `${ore} (${r.rarity}) - 1 in ${formatNumber(r.exact)}${eventTag}`;
-            indexDiv.appendChild(div);
-        });
+        // Mode Normal → lime/rouge | Mode mutation → couleur mutation/rouge
+        div.style.color = owned ? "lime" : "red";
+
+        let eventTag = "";
+        if (r.event) {
+            const ec = { space:"#9c27ff", ocean:"#00bfff", fire:"#ff5722", computer:"#00ffcc", nuclear:"#7fff00", evolie:"#cfa26b", mlp:"#ff66cc", terraria:"#66bb6a" };
+            eventTag = `<span style="color:${ec[r.event]||"#fff"};font-weight:bold;margin-left:6px">[${r.event.toUpperCase()}]</span>`;
+        }
+
+        const mutTag = activeMut
+            ? ` <span style="color:${activeMc};font-weight:bold">[${oreIndexMutationFilter}]</span>`
+            : "";
+
+        const displayExact = activeMut ? r.exact * activeMut.multi : r.exact;
+        div.innerHTML = `${ore}${mutTag} (${r.rarity}) - 1 in ${formatNumber(displayExact)}${eventTag}`;
+        indexDiv.appendChild(div);
+    });
 }
 // PICKAXE BUTTON
 function createPickaxeButton(name, desc, cost) {
@@ -2416,28 +2569,46 @@ const oreRarity = document.getElementById("oreRarity");
 let lastSpawnOre = null;
 
 function showOreViewer(ore) {
-    const data = oreData[ore];
+    // Support mutated keys like "Gold [Inverted]"
+    const baseName = ore.split(" [")[0];
+    const mutName = ore.includes(" [") ? ore.replace(/^.*\[(.+)\]$/, "$1") : null;
+    const data = oreData[baseName] || oreData[ore];
+    if (!data) return;
+
+    const mut = mutName ? mutations.find(m => m.name === mutName) : null;
+    const mc = mutName ? (mutationColors[mutName] || "#ff00ff") : null;
+    const effectiveExact = mut ? data.exact * mut.multi : data.exact;
+
     oreViewer.style.display = "block";
-
-    // Clear previous content
     oreBlock.innerHTML = "";
+    oreBlock.style.outline = "";
+    oreBlock.style.boxShadow = "";
 
-    // If ore has an image, show it
-    if (oreImages[ore]) {
-        const img = oreImages[ore].cloneNode(); // clone to allow multiple views
+    if (oreImages[baseName]) {
+        const img = oreImages[baseName].cloneNode();
         img.style.width = "100%";
         img.style.height = "100%";
         img.style.objectFit = "contain";
+        if (mc) {
+            img.style.outline = `3px solid ${mc}`;
+            img.style.filter = `drop-shadow(0 0 6px ${mc})`;
+        }
         oreBlock.appendChild(img);
     } else {
-        // Fallback: show symbol
         oreBlock.innerText = data.symbol || "";
         oreBlock.style.color = data.symbolColor || "#fff";
         oreBlock.style.background = data.color;
+        if (mc) {
+            oreBlock.style.outline = `3px solid ${mc}`;
+            oreBlock.style.boxShadow = `0 0 10px ${mc}`;
+        }
     }
 
-    oreName.innerText = `${ore} (${data.rarity})`;
-    oreRarity.innerText = `1 in ${formatNumber(data.exact)}`;
+    const mutLabel = mc
+        ? ` <span style="color:${mc};font-weight:bold">[${mutName}]</span>`
+        : "";
+    oreName.innerHTML = `${baseName}${mutLabel} (${data.rarity})`;
+    oreRarity.innerText = `1 in ${formatNumber(effectiveExact)}`;
 
     // Toggle hide if same ore clicked
     if (lastSpawnOre === ore) {
@@ -2448,10 +2619,11 @@ function showOreViewer(ore) {
     }
 }
 
-// Remove invalid ores from inventory
+// Remove invalid ores from inventory (preserves mutated keys)
 function sanitizeInventory() {
     for (let ore in inventory) {
-        if (!oreData[ore]) {
+        const baseName = ore.split(" [")[0];
+        if (!oreData[baseName] && !oreData[ore]) {
             console.warn(`Removed invalid ore from inventory: ${ore}`);
             delete inventory[ore];
         }
@@ -2459,9 +2631,12 @@ function sanitizeInventory() {
 }
 
 
-// Replay button
+// Replay button — uses baseName so mutations play the right sound
 replaySpawn.onclick = () => {
-    if (lastSpawnOre) playSpawnSound(lastSpawnOre);
+    if (lastSpawnOre) {
+        const baseName = lastSpawnOre.split(" [")[0];
+        playSpawnSound(baseName);
+    }
 };
 
 
