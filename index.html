@@ -2192,6 +2192,11 @@ function requestUIUpdate(force = false) {
             const count = inventory[o] || 0;
             if (!r || count <= 0) return;
 
+            // Hide mutations when index is in Normal mode and no search
+            if (!search && oreIndexMutationFilter === "Normal" && mutTag) return;
+            // In mutation mode, only show that exact mutation
+            if (!search && oreIndexMutationFilter !== "Normal" && mutTag !== oreIndexMutationFilter) return;
+
             // 🔎 Filtering logic
             const searchLower = search.toLowerCase();
 
@@ -2200,7 +2205,10 @@ function requestUIUpdate(force = false) {
                 [...cave.caveBlocks, ...cave.exclusiveOres].map(x => x.toLowerCase())
             );
 
-            // name match (includes mutation tag in key)
+            // name match on baseName — shows ALL variants (normal + mutated) of that ore
+            const baseNameMatch = baseName.toLowerCase().includes(searchLower);
+
+            // full key match (e.g. "stone [inverted]")
             const nameMatch = o.toLowerCase().includes(searchLower);
 
             // rarity match
@@ -2224,9 +2232,10 @@ function requestUIUpdate(force = false) {
                 mutTag.toLowerCase().includes(searchLower)
             );
 
-            // final filter
+            // final filter — baseNameMatch bypasses mutation mode to show all variants
             if (
                 search &&
+                !baseNameMatch &&
                 !nameMatch &&
                 !rarityMatch &&
                 !eventMatch &&
@@ -2234,6 +2243,15 @@ function requestUIUpdate(force = false) {
                 !normalMatch &&
                 !mutationMatch
             ) return;
+
+            // If search matches baseName, override mutation mode filter to show all variants
+            if (search && baseNameMatch) {
+                // show this entry regardless of mutation mode
+            } else {
+                // apply mutation mode filter
+                if (!search && oreIndexMutationFilter === "Normal" && mutTag) return;
+                if (!search && oreIndexMutationFilter !== "Normal" && mutTag !== oreIndexMutationFilter) return;
+            }
 
             // 🎨 Styling — mutated ores get a colored border per mutation
             const div = document.createElement("div");
@@ -2292,6 +2310,7 @@ function cycleOreIndexMutation() {
     const idx = mutationCycleStates.indexOf(oreIndexMutationFilter);
     oreIndexMutationFilter = mutationCycleStates[(idx + 1) % mutationCycleStates.length];
     updateOreIndex();
+    updateUI();
 }
 
 function updateOreIndex() {
@@ -2305,6 +2324,9 @@ function updateOreIndex() {
     );
     discoveredOres.clear();
 
+    // Precompute owned keys once
+    const ownedKeys = new Set(Object.keys(inventory).filter(k => (inventory[k] || 0) > 0));
+
     // ── Détecte si la recherche cible une mutation ──
     const mutationNames = mutations.map(m => m.name.toLowerCase());
     const specificMut = mutations.find(m =>
@@ -2315,11 +2337,6 @@ function updateOreIndex() {
     // ── MODE RECHERCHE MUTATION ──
     if (isMutationSearch) {
         const targetMuts = specificMut ? [specificMut] : mutations;
-
-        // Précompute toutes les clés possédées
-        const ownedKeys = new Set(
-            Object.keys(inventory).filter(k => (inventory[k] || 0) > 0)
-        );
 
         const rows = [];
         let ownedCount = 0;
@@ -2355,6 +2372,48 @@ function updateOreIndex() {
         return;
     }
 
+    // ── ORE NAME SEARCH: show base ore + all mutation variants ──
+    // Detect if search is a plain ore name (not a keyword)
+    const keywords = ["normal","cave","event","mutations","mutation","space","ocean","nuclear","fire","evolie","computer","mlp","terraria","icecave","energycave","normalcave","nuclearcave","shadowcave","abysscave","lavacave"];
+    const isKeyword = keywords.includes(search) || mutations.some(m => m.name.toLowerCase().startsWith(search) && search.length >= 3);
+    const matchedOres = !isKeyword && search ? allOres.filter(o => o.toLowerCase().includes(search)) : [];
+
+    if (matchedOres.length > 0) {
+        let ownedCount = 0;
+        const rows = [];
+
+        matchedOres.forEach(ore => {
+            const r = oreData[ore];
+            // normal version
+            const normOwned = ownedKeys.has(ore);
+            if (normOwned) ownedCount++;
+            rows.push({ ore, r, mut: null, mc: null, owned: normOwned, exact: r.exact });
+            // all mutations
+            mutations.forEach(mut => {
+                const key = `${ore} [${mut.name}]`;
+                const owned = ownedKeys.has(key);
+                if (owned) ownedCount++;
+                const mc = mutationColors[mut.name] || "#ff00ff";
+                rows.push({ ore, r, mut, mc, owned, exact: r.exact * mut.multi });
+            });
+        });
+
+        rows.sort((a, b) => sortRarestFirst ? b.exact - a.exact : a.exact - b.exact);
+        indexDiv.innerHTML = `<h3 style="display:inline">Ore Index (${ownedCount} / ${rows.length})</h3><br>`;
+
+        rows.forEach(({ ore, r, mut, mc, owned, exact }) => {
+            const div = document.createElement("div");
+            div.style.fontSize = "13px";
+            div.style.padding = "2px 4px";
+            div.style.marginBottom = "1px";
+            div.style.color = owned ? "lime" : "red";
+            const mutTag = mc ? ` <span style="color:${mc};font-weight:bold">[${mut.name}]</span>` : "";
+            div.innerHTML = `${ore}${mutTag} (${r.rarity}) - 1 in ${formatNumber(exact)}`;
+            indexDiv.appendChild(div);
+        });
+        return;
+    }
+
     // ── MODE NORMAL / CYCLE MUTATION ──
     const filteredOres = allOres.filter(ore => {
         const r = oreData[ore];
@@ -2372,9 +2431,6 @@ function updateOreIndex() {
     const activeMc = mutationColors[oreIndexMutationFilter] || "#fff";
 
     // Précompute un Set de toutes les clés possédées pour ce filtre
-    const ownedKeys = new Set(
-        Object.keys(inventory).filter(k => (inventory[k] || 0) > 0)
-    );
     const invKey = (ore) => activeMut ? `${ore} [${oreIndexMutationFilter}]` : ore;
     const isOwned = (ore) => ownedKeys.has(invKey(ore));
 
