@@ -59,6 +59,10 @@
             border-radius: 8px;
         }
 
+        /* Desktop: accordion headers hidden, bodies always visible */
+        .accordion-header { display: none; }
+        .accordion-body { display: block; }
+
         #inventory {
             width: 960px;
             padding: 10px;
@@ -357,16 +361,71 @@
         width: 100% !important;
         flex-direction: column;
         align-items: center;
+        gap: 6px;
     }
 
+    /* ── ACCORDION PANELS ── */
     #pickaxeUI,
     #gearUI,
     #artefactUI,
     #luckArtefactUI {
         width: 95% !important;
-        height: auto;
-        max-height: 250px;
+        height: auto !important;
+        max-height: none !important;
+        overflow: visible !important;
+        padding: 0 !important;
         margin-right: 0;
+        border-radius: 8px;
+        background: #181818;
+        border: 1px solid #333;
+        box-sizing: border-box;
+    }
+
+    /* Accordion header — visible only on mobile */
+    .accordion-header {
+        display: flex !important;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 14px;
+        cursor: pointer;
+        user-select: none;
+        background: #2a2a2a;
+        border-radius: 8px;
+        font-size: 15px;
+        font-weight: bold;
+        color: white;
+    }
+
+    .accordion-arrow {
+        font-size: 11px;
+        color: #aaa;
+        transition: transform 0.25s ease;
+        display: inline-block;
+    }
+
+    .accordion-arrow.open {
+        transform: rotate(180deg);
+    }
+
+    /* Collapsed by default */
+    .accordion-body {
+        max-height: 0 !important;
+        overflow: hidden !important;
+        padding: 0 10px !important;
+        transition: max-height 0.3s ease, padding 0.3s ease;
+        box-sizing: border-box;
+    }
+
+    /* Open state */
+    .accordion-body.open {
+        max-height: 600px !important;
+        overflow-y: auto !important;
+        padding: 10px !important;
+    }
+
+    /* Hide H3 inside body on mobile — header already shows the title */
+    .accordion-body .panel-h3 {
+        display: none;
     }
 
     /* Bottom panels stack */
@@ -376,64 +435,86 @@
     }
 
     #oreIndex,
-		#inventory {
+    #inventory {
         width: 95% !important;
         height: 200px;
     }
 
-	#oreViewer {
-		display: none;
-        width: 80%;           /* smaller width */
-        max-width: 250px;     /* max width */
-        height: auto;         /* allow height to adjust */
+    /* Ore viewer */
+    #oreViewer {
+        display: none;
+        width: 80%;
+        max-width: 250px;
+        height: auto;
         bottom: 20px;
         left: 50%;
         transform: translateX(-50%);
         padding: 6px;
-        font-size: 12px;      /* smaller base font */
+        font-size: 12px;
         z-index: 99999;
         flex-direction: column;
         align-items: center;
         box-sizing: border-box;
     }
 
-    /* Ore block inside viewer */
     #oreBlock {
         width: 100%;
-        height: 80px;         /* reduce height for mobile */
-        font-size: 40px;      /* scale symbol size */
+        height: 80px;
+        font-size: 40px;
         margin-bottom: 6px;
     }
 
-    /* Ore name and rarity */
     #oreName, #oreRarity {
-        font-size: 12px;      /* smaller text */
+        font-size: 12px;
         text-align: center;
         margin-bottom: 4px;
-        word-break: break-word; /* prevent overflow */
+        word-break: break-word;
     }
 
-    /* Replay button */
     #replaySpawn {
         width: 100%;
-        font-size: 12px;       /* smaller button text */
+        font-size: 12px;
         padding: 6px;
         margin-top: 4px;
         box-sizing: border-box;
     }
 
-	/* Bigger tap buttons for mobile */
-	button {
-		font-size: 14px;
-		padding: 10px;
-	}
-	#spawnMessage {
-        top: 10px;             /* position near top of viewport */
-        left: 50%;             /* keep horizontally centered */
-        transform: translateX(-50%); /* horizontal centering only */
-        font-size: 20px;       /* slightly smaller for mobile */
-        padding: 15px 25px;    /* adjust padding */
-        border-radius: 10px;   /* softer corners */
+    /* Search bar — full width, centered */
+    #oreSearch {
+        width: 95% !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+        box-sizing: border-box;
+        display: block;
+    }
+
+    /* Event box — in-flow, fixed at top of viewport */
+    .event-box {
+        position: fixed !important;
+        top: 10px !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        width: auto !important;
+        max-width: 90vw !important;
+        font-size: 14px !important;
+        padding: 6px 14px !important;
+        white-space: nowrap;
+        z-index: 9999 !important;
+    }
+
+    /* Bigger tap buttons for mobile */
+    button {
+        font-size: 14px;
+        padding: 10px;
+    }
+
+    #spawnMessage {
+        top: 10px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 20px;
+        padding: 15px 25px;
+        border-radius: 10px;
     }
 }
 
@@ -502,10 +583,30 @@ style="
     margin-right: auto;
 ">
     <div id="ui">
-        <div id="pickaxeUI"><h3>Pickaxes</h3></div>
-        <div id="gearUI"><h3>Gear</h3></div>
-        <div id="artefactUI"><h3>Auto-Miner Artefact</h3></div>
-        <div id="luckArtefactUI"><h3>Luck Artefact</h3></div>
+        <div id="pickaxeUI">
+            <div class="accordion-header" onclick="toggleAccordion('pickaxeUI')">
+                <span>Pickaxes</span><span class="accordion-arrow" id="arrow-pickaxeUI">▼</span>
+            </div>
+            <div class="accordion-body" id="body-pickaxeUI"><h3 class="panel-h3">Pickaxes</h3></div>
+        </div>
+        <div id="gearUI">
+            <div class="accordion-header" onclick="toggleAccordion('gearUI')">
+                <span>Gear</span><span class="accordion-arrow" id="arrow-gearUI">▼</span>
+            </div>
+            <div class="accordion-body" id="body-gearUI"><h3 class="panel-h3">Gear</h3></div>
+        </div>
+        <div id="artefactUI">
+            <div class="accordion-header" onclick="toggleAccordion('artefactUI')">
+                <span>Auto-Miner Artefact</span><span class="accordion-arrow" id="arrow-artefactUI">▼</span>
+            </div>
+            <div class="accordion-body" id="body-artefactUI"><h3 class="panel-h3">Auto-Miner Artefact</h3></div>
+        </div>
+        <div id="luckArtefactUI">
+            <div class="accordion-header" onclick="toggleAccordion('luckArtefactUI')">
+                <span>Luck Artefact</span><span class="accordion-arrow" id="arrow-luckArtefactUI">▼</span>
+            </div>
+            <div class="accordion-body" id="body-luckArtefactUI"><h3 class="panel-h3">Luck Artefact</h3></div>
+        </div>
     </div>
 
     <!-- Block counters -->
@@ -2275,17 +2376,18 @@ function requestUIUpdate(force = false) {
 
 
     // Pickaxes, Gears, Artefacts, Luck Artefacts
-    const pUI = document.getElementById("pickaxeUI");
-    pUI.innerHTML = "";
+    const pBody = document.getElementById("body-pickaxeUI");
+    Array.from(pBody.children).forEach(c => { if (!c.classList.contains("panel-h3")) c.remove(); });
     for (let name in pickaxeData) createPickaxeButton(name, pickaxeData[name].desc, pickaxeData[name].cost);
 
-    const gUI = document.getElementById("gearUI");
-    gUI.innerHTML = "";
+    const gBody = document.getElementById("body-gearUI");
+    Array.from(gBody.children).forEach(c => { if (!c.classList.contains("panel-h3")) c.remove(); });
     for (let name in gearData) createGearButton(name, gearData[name].desc, gearData[name].cost);
 
     updateArtefactUI();
     updateLuckArtefactUI();
     updateOreIndex();
+    restoreAccordionState();
 }
 
 const searchInput = document.getElementById("oreSearch");
@@ -2506,7 +2608,7 @@ function createPickaxeButton(name, desc, cost) {
     }
 
     container.appendChild(div);
-    document.getElementById("pickaxeUI").appendChild(container);
+    document.getElementById("body-pickaxeUI").appendChild(container);
 }
 
 // GEAR BUTTON
@@ -2543,7 +2645,7 @@ function createGearButton(name, desc, cost) {
     }
 
     container.appendChild(div);
-    document.getElementById("gearUI").appendChild(container);
+    document.getElementById("body-gearUI").appendChild(container);
 }
 
 // Equip Gear
@@ -2557,8 +2659,8 @@ function equipGear(name) {
 
 	// ARTEFACT UI
 function updateArtefactUI() {
-    const aUI = document.getElementById("artefactUI");
-    aUI.innerHTML = "";
+    const aBody = document.getElementById("body-artefactUI");
+    Array.from(aBody.children).forEach(c => { if (!c.classList.contains("panel-h3")) c.remove(); });
 
     const maxLevel = Object.keys(artefactData).length;
 
@@ -2616,7 +2718,7 @@ function updateArtefactUI() {
         }
 
         container.appendChild(div);
-        aUI.appendChild(container);
+        aBody.appendChild(container);
     }
 }
 
@@ -2624,8 +2726,8 @@ function updateArtefactUI() {
 
 
 function updateLuckArtefactUI() {
-    const lUI = document.getElementById("luckArtefactUI");
-    lUI.innerHTML = "";
+    const lBody = document.getElementById("body-luckArtefactUI");
+    Array.from(lBody.children).forEach(c => { if (!c.classList.contains("panel-h3")) c.remove(); });
 
     const maxLevel = Object.keys(luckArtefactData).length;
 
@@ -2678,7 +2780,7 @@ function updateLuckArtefactUI() {
         }
 
         container.appendChild(div);
-        lUI.appendChild(container);
+        lBody.appendChild(container);
     }
 }
 
@@ -2808,6 +2910,26 @@ function loadGame() {
         currentVolumeIndex = 0;
     }
 }
+// ── ACCORDION (mobile only) ──
+const accordionState = { pickaxeUI: false, gearUI: false, artefactUI: false, luckArtefactUI: false };
+
+function toggleAccordion(panelId) {
+    accordionState[panelId] = !accordionState[panelId];
+    const body = document.getElementById("body-" + panelId);
+    const arrow = document.getElementById("arrow-" + panelId);
+    if (body)  body.classList.toggle("open",  accordionState[panelId]);
+    if (arrow) arrow.classList.toggle("open", accordionState[panelId]);
+}
+
+function restoreAccordionState() {
+    for (const panelId in accordionState) {
+        const body  = document.getElementById("body-"  + panelId);
+        const arrow = document.getElementById("arrow-" + panelId);
+        if (body)  body.classList.toggle("open",  accordionState[panelId]);
+        if (arrow) arrow.classList.toggle("open", accordionState[panelId]);
+    }
+}
+
 document.getElementById("oreSearch").addEventListener("input", updateOreIndex);
 loadGame();
 document.querySelectorAll("audio").forEach(a => {
