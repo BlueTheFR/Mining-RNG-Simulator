@@ -1759,9 +1759,29 @@ function randomOre() {
 
        if (elapsed >= 2 && validExclusiveOres.length > 0) {
 
+    // Compute luck multiplier locally (same logic as mineBlocks)
+    let localLuckMultiplier = 1;
+    switch (equippedPickaxe) {
+        case "T6": localLuckMultiplier *= 5; break;
+        case "T7": localLuckMultiplier *= 35; break;
+        case "T8": localLuckMultiplier *= 50; break;
+        case "T9": localLuckMultiplier *= 75; break;
+        case "T10": localLuckMultiplier *= 100; break;
+    }
+    equippedGears.forEach(g => {
+        switch(g) {
+            case "T4": localLuckMultiplier += 2; break;
+            case "T5": localLuckMultiplier += 10; break;
+            case "T6": localLuckMultiplier += 25; break;
+            case "T7": localLuckMultiplier += 35; break;
+            case "T9": localLuckMultiplier += 75; break;
+            case "T10": localLuckMultiplier += 100; break;
+        }
+    });
+
     // Full total luck multiplier (artefact + gear + pickaxe)
     let totalLuck = 1 + (luckArtefactLevel || 0);  // artefact luck
-    totalLuck *= luckMultiplier || 1;              // gear + pickaxe luck
+    totalLuck *= localLuckMultiplier;              // gear + pickaxe luck
 
     // Reduce total luck in caves (example: 1000×)
     totalLuck = 1 + (totalLuck - 1) / 1000;
@@ -1908,6 +1928,7 @@ canvas.addEventListener("click",e=>{
 let lastT6Upgrade = 0; // global variable to track T6 30s cooldown
 let t9MinedCounter = 0;
 let t10MinedCounter = 0;
+let lastT10CaveProc = 0; // rate-limit T10 cave 50/50 to 1 per second
 
 function mineBlocks(x, y, manual = false) {
     if (spawnLock) return;
@@ -2039,9 +2060,11 @@ if (activeCave && activeCave.caveBlocks.includes(ore2)) {
     const caveMutation = rollMutation(chosenOre, equippedPickaxe);
     let caveFinalKey = caveMutation ? `${chosenOre} [${caveMutation.name}]` : chosenOre;
 
-    // T10 gear: 50/50 respawn+upgrade on 50M+ cave exclusives
+    // T10 gear: 50/50 respawn+upgrade on 50M+ cave exclusives (capped at 1 proc/sec)
     const caveData = oreData[chosenOre];
-    if (equippedGears.includes("T10") && caveData && caveData.exact >= 50000000) {
+    const now_t10 = Date.now();
+    if (equippedGears.includes("T10") && caveData && caveData.exact >= 50000000 && (now_t10 - lastT10CaveProc) >= 1000) {
+        lastT10CaveProc = now_t10;
         // 50% upgrade: move to next rarity tier (same mutation preserved)
         if (Math.random() < 0.5) {
             const idx = rarityOrder.indexOf(caveData.rarity);
@@ -2306,14 +2329,18 @@ function requestUIUpdate(force = false) {
                 [...cave.caveBlocks, ...cave.exclusiveOres].map(x => x.toLowerCase())
             );
 
-            // name match on baseName — shows ALL variants (normal + mutated) of that ore
-            const baseNameMatch = baseName.toLowerCase().includes(searchLower);
+            // Detect if search is a keyword (same list as ore index)
+            const invKeywords = ["normal","cave","event","mutations","mutation","space","ocean","nuclear","fire","evolie","computer","mlp","terraria","icecave","energycave","normalcave","nuclearcave","shadowcave","abysscave","lavacave"];
+            const invIsKeyword = invKeywords.includes(searchLower) || mutations.some(m => m.name.toLowerCase().startsWith(searchLower) && searchLower.length >= 3);
 
-            // full key match (e.g. "stone [inverted]")
-            const nameMatch = o.toLowerCase().includes(searchLower);
+            // name match on baseName — only when not a keyword
+            const baseNameMatch = !invIsKeyword && baseName.toLowerCase().includes(searchLower);
 
-            // rarity match
-            const rarityMatch = r.rarity.toLowerCase().includes(searchLower);
+            // full key match (e.g. "stone [inverted]") — only when not a keyword
+            const nameMatch = !invIsKeyword && o.toLowerCase().includes(searchLower);
+
+            // rarity match — only when not a keyword
+            const rarityMatch = !invIsKeyword && r.rarity.toLowerCase().includes(searchLower);
 
             // event match
             const eventMatch = r.event && (
@@ -2330,8 +2357,15 @@ function requestUIUpdate(force = false) {
             const mutationMatch = mutTag && (
                 searchLower === "mutations" ||
                 searchLower === "mutation" ||
-                mutTag.toLowerCase().includes(searchLower)
+                (!invIsKeyword && mutTag.toLowerCase().includes(searchLower))
             );
+
+            // For keyword searches: also enforce mutation filter
+            if (search && invIsKeyword && !mutationMatch) {
+                // cave/normal/event keywords: respect oreIndexMutationFilter
+                if (oreIndexMutationFilter === "Normal" && mutTag) return;
+                if (oreIndexMutationFilter !== "Normal" && mutTag !== oreIndexMutationFilter) return;
+            }
 
             // final filter — baseNameMatch bypasses mutation mode to show all variants
             if (
@@ -2345,11 +2379,11 @@ function requestUIUpdate(force = false) {
                 !mutationMatch
             ) return;
 
-            // If search matches baseName, override mutation mode filter to show all variants
+            // If search matches baseName (non-keyword), show all variants of that ore
             if (search && baseNameMatch) {
                 // show this entry regardless of mutation mode
-            } else {
-                // apply mutation mode filter
+            } else if (!invIsKeyword) {
+                // apply mutation mode filter for non-keyword, non-baseName matches
                 if (!search && oreIndexMutationFilter === "Normal" && mutTag) return;
                 if (!search && oreIndexMutationFilter !== "Normal" && mutTag !== oreIndexMutationFilter) return;
             }
@@ -2486,18 +2520,23 @@ function updateOreIndex() {
 
         matchedOres.forEach(ore => {
             const r = oreData[ore];
-            // normal version
-            const normOwned = ownedKeys.has(ore);
-            if (normOwned) ownedCount++;
-            rows.push({ ore, r, mut: null, mc: null, owned: normOwned, exact: r.exact });
-            // all mutations
-            mutations.forEach(mut => {
-                const key = `${ore} [${mut.name}]`;
-                const owned = ownedKeys.has(key);
-                if (owned) ownedCount++;
-                const mc = mutationColors[mut.name] || "#ff00ff";
-                rows.push({ ore, r, mut, mc, owned, exact: r.exact * mut.multi });
-            });
+
+            if (oreIndexMutationFilter === "Normal") {
+                // Normal mode: only show base ore (no mutations)
+                const normOwned = ownedKeys.has(ore);
+                if (normOwned) ownedCount++;
+                rows.push({ ore, r, mut: null, mc: null, owned: normOwned, exact: r.exact });
+            } else {
+                // Mutation mode: only show that specific mutation variant
+                const activeMut = mutations.find(m => m.name === oreIndexMutationFilter);
+                if (activeMut) {
+                    const key = `${ore} [${activeMut.name}]`;
+                    const owned = ownedKeys.has(key);
+                    if (owned) ownedCount++;
+                    const mc = mutationColors[activeMut.name] || "#ff00ff";
+                    rows.push({ ore, r, mut: activeMut, mc, owned, exact: r.exact * activeMut.multi });
+                }
+            }
         });
 
         rows.sort((a, b) => sortRarestFirst ? b.exact - a.exact : a.exact - b.exact);
@@ -2519,11 +2558,12 @@ function updateOreIndex() {
     // ── MODE NORMAL / CYCLE MUTATION ──
     const filteredOres = allOres.filter(ore => {
         const r = oreData[ore];
-        const nameMatch = ore.toLowerCase().includes(search);
-        const rarityMatch = r.rarity.toLowerCase().includes(search);
         const eventMatch = r.event && (search === "event" || search === r.event.toLowerCase());
         const caveMatch = allCaveOres.includes(ore.toLowerCase()) && search === "cave";
         const normalMatch = search === "normal" && !r.event && !allCaveOres.includes(ore.toLowerCase());
+        // Only use nameMatch / rarityMatch when no keyword is active
+        const nameMatch = !isKeyword && ore.toLowerCase().includes(search);
+        const rarityMatch = !isKeyword && r.rarity.toLowerCase().includes(search);
         const keep = !search || nameMatch || rarityMatch || eventMatch || caveMatch || normalMatch;
         if (keep) discoveredOres.add(ore);
         return keep;
